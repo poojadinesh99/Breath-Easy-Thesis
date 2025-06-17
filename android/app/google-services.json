@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "177383643104",
+    "project_id": "breatheasy-623e8",
+    "storage_bucket": "breatheasy-623e8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:177383643104:android:e45d127f3762b90cb77d85",
+        "android_client_info": {
+          "package_name": "com.example.breath_easy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA88Ximp1fEo1DQUp1tGCqlGbFXq5zbLMA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
