@@ -1,16 +1,57 @@
-# breath_easy
+# Breath Easy Thesis
 
-A new Flutter project.
+A cross-platform Flutter app for tracking respiratory health, developed as part of a thesis project.
+
+## Features
+
+- **Symptom Tracker:** Log daily respiratory and related symptoms with intensity ratings.
+- **Patient Profile:** Manage patient information and consent.
+- **Symptom History:** View and analyze past symptom logs.
+- **Breath Analysis:** (Planned) Analyze breath data for health insights.
+- **AI Alerts:** (Planned) Receive AI-driven health alerts and recommendations.
+- **Recommendations:** Get personalized health suggestions.
+- **Firebase Integration:** Secure data storage and retrieval.
+- **Cross-Platform:** Runs on Android, iOS, web, macOS, Linux, and Windows.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/poojadinesh99/Breath-Easy-Thesis.git
+   cd Breath-Easy-Thesis
+   ```
 
-A few resources to get you started if this is your first Flutter project:
+2. **Install dependencies:**
+   ```sh
+   flutter pub get
+   ```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+3. **Run the app:**
+   ```sh
+   flutter run
+   ```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+4. **Firebase Setup:**
+   - Add your Firebase configuration files for each platform as needed.
+
+## Project Structure
+
+- `lib/screens/` — Main app screens (Home, Symptom Tracker, Profile, etc.)
+- `lib/services/` — Firebase and AI service integrations
+- `lib/widgets/` — Reusable UI components
+- `android/`, `ios/`, `web/`, etc. — Platform-specific files
+
+## Contributing
+
+This project is private and for academic use.  
+For collaboration, please request access.
+
+## License
+
+For academic and research purposes only.
+
+---
+
+**Developed by:**  
+Pooja Dinesh  
+(MSc Thesis Project)
