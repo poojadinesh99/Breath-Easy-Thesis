@@ -1,0 +1,12 @@
+# Supabase CLI config file for project fjxofvxbujivsqyfbldu
+
+[project]
+ref = "fjxofvxbujivsqyfbldu"
+# Add your Supabase project URL and keys here if needed for CLI tools
+
+[env]
+# Environment variables for local development
+SUPABASE_URL = "https://fjxofvxbujivsqyfbldu.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqeG9mdnhidWppdnNxeWZibGR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAzNjE1MDgsImV4cCI6MjA2NTkzNzUwOH0.OEkUpvEX2lsB6eJI2NHg6xnFaM34kNi2CBo-61VTjzY"
+SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqeG9mdnhidWppdnNxeWZibGR1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDM2MTUwOCwiZXhwIjoyMDY1OTM3NTA4fQ.8YZVEt2XIzuLbfKzT9Muyu188DlHXQcCjetFDhxmCgk"
+POSTGRES_PASSWORD = "TIMESERIES_BREATHEASY"

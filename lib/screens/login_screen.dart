@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../services/supabase_auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -9,58 +9,37 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final SupabaseAuthService _authService = SupabaseAuthService();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
 
   Future<void> _signInWithEmail() async {
     try {
-      await _auth.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      final user = await _authService.signIn(_emailController.text.trim(), _passwordController.text.trim());
+      if (user != null) {
+        if (user.emailConfirmedAt == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please verify your email before signing in.')),
+          );
+          return;
+        }
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
   Future<void> _signUpWithEmail() async {
     try {
-      await _auth.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      final user = await _authService.signUp(_emailController.text.trim(), _passwordController.text.trim());
+      if (user != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign up successful! Please check your email to verify your account.')),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
-  }
-
-  Future<void> _signInWithPhone() async {
-    try {
-      await _auth.verifyPhoneNumber(
-        phoneNumber: _phoneController.text.trim(),
-        verificationCompleted: (PhoneAuthCredential credential) async {
-          await _auth.signInWithCredential(credential);
-        },
-        verificationFailed: (FirebaseAuthException e) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error: ${e.message}')));
-        },
-        codeSent: (String verificationId, int? resendToken) {
-          // Handle code sent (e.g., show a dialog to enter the OTP)
-        },
-        codeAutoRetrievalTimeout: (String verificationId) {},
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
@@ -89,15 +68,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ElevatedButton(
               onPressed: _signUpWithEmail,
               child: const Text('Sign Up with Email'),
-            ),
-            const Divider(),
-            TextField(
-              controller: _phoneController,
-              decoration: const InputDecoration(labelText: 'Phone Number'),
-            ),
-            ElevatedButton(
-              onPressed: _signInWithPhone,
-              child: const Text('Sign In with Phone'),
             ),
           ],
         ),
