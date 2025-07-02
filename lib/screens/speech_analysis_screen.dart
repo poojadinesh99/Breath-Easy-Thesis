@@ -10,14 +10,14 @@ import '../features/breath_analysis/data/models/sound_sample.dart';
 import '../features/breath_analysis/presentation/sound_category_selector.dart';
 import 'app_theme.dart';
 
-class BreathAnalysisScreen extends StatefulWidget {
-  const BreathAnalysisScreen({Key? key}) : super(key: key);
+class SpeechAnalysisScreen extends StatefulWidget {
+  const SpeechAnalysisScreen({Key? key}) : super(key: key);
 
   @override
-  State<BreathAnalysisScreen> createState() => _BreathAnalysisScreenState();
+  State<SpeechAnalysisScreen> createState() => _SpeechAnalysisScreenState();
 }
 
-class _BreathAnalysisScreenState extends State<BreathAnalysisScreen> {
+class _SpeechAnalysisScreenState extends State<SpeechAnalysisScreen> {
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   bool _isRecorderInitialized = false;
   bool _isRecording = false;
@@ -87,7 +87,7 @@ class _BreathAnalysisScreenState extends State<BreathAnalysisScreen> {
         if (response != null && response.isNotEmpty) {
           final publicUrl = supabase.storage.from('recordings').getPublicUrl(filePath);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Recording uploaded successfully! URL: \$publicUrl')),
+            SnackBar(content: Text('Recording uploaded successfully! URL: $publicUrl')),
           );
           // Save recording metadata to recordings table
           await supabase.from('recordings').insert({
@@ -102,7 +102,7 @@ class _BreathAnalysisScreenState extends State<BreathAnalysisScreen> {
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to upload recording: \$e')),
+          SnackBar(content: Text('Failed to upload recording: $e')),
         );
       }
     } else {
@@ -130,7 +130,7 @@ class _BreathAnalysisScreenState extends State<BreathAnalysisScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Breath Analysis - Record'),
+        title: const Text('Speech Analysis - Record'),
         backgroundColor: AppTheme.notWhite,
         foregroundColor: AppTheme.darkerText,
         elevation: 0,
@@ -145,27 +145,6 @@ class _BreathAnalysisScreenState extends State<BreathAnalysisScreen> {
               onCategorySelected: _onCategorySelected,
             ),
             const SizedBox(height: 20),
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    Text(
-                      'Instructions',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Please take a deep breath and hold it for 5 seconds, then exhale slowly. Repeat this process 3 times.',
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
             ElevatedButton.icon(
               icon: Icon(_isRecording ? Icons.stop : Icons.mic),
               label: Text(_isRecording ? 'Stop Recording' : 'Start Recording'),
@@ -177,7 +156,7 @@ class _BreathAnalysisScreenState extends State<BreathAnalysisScreen> {
             const SizedBox(height: 20),
             if (_recordedFilePath != null)
               Text(
-                'Last recording saved at:\n\$_recordedFilePath',
+                'Last recording saved at:\n$_recordedFilePath',
                 textAlign: TextAlign.center,
               ),
             const SizedBox(height: 20),
@@ -196,7 +175,7 @@ class _BreathAnalysisScreenState extends State<BreathAnalysisScreen> {
                   } else if (snapshot.hasError) {
                     return Center(child: Text('Error: ${snapshot.error}'));
                   } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('No breath analysis recordings found.'));
+                    return const Center(child: Text('No speech analysis recordings found.'));
                   } else {
                     final recordings = snapshot.data!;
                     return ListView.builder(
@@ -206,7 +185,7 @@ class _BreathAnalysisScreenState extends State<BreathAnalysisScreen> {
                         return ListTile(
                           leading: const Icon(Icons.audiotrack),
                           title: Text(recording['category'] ?? 'Unknown'),
-                          subtitle: Text("Recorded at: ${recording['recorded_at']}"),
+                          subtitle: Text('Recorded at: ${recording['recorded_at']}'),
                           onTap: () {
                             // Optionally, implement playback or details
                           },
@@ -223,7 +202,7 @@ class _BreathAnalysisScreenState extends State<BreathAnalysisScreen> {
     );
   }
 
- Future<List<Map<String, dynamic>>> _fetchRecordings() async {
+  Future<List<Map<String, dynamic>>> _fetchRecordings() async {
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
     if (user == null) {
@@ -235,7 +214,7 @@ class _BreathAnalysisScreenState extends State<BreathAnalysisScreen> {
           .from('recordings')
           .select() // typed result
           .eq('user_id', user.id)
-          .eq('category', 'breath')
+          .eq('category', 'speech')
           .order('recorded_at', ascending: false);
 
       return data; // List<Map<String,dynamic>>

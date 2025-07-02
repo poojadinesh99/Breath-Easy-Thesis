@@ -1,6 +1,12 @@
+import 'package:breath_easy/screens/analysis_selection_screen.dart';
+import 'package:breath_easy/screens/breath_analysis_screen.dart';
+import 'package:breath_easy/screens/monitoring_screen.dart';
+import 'package:breath_easy/screens/speech_analysis_screen.dart';
 import 'package:flutter/material.dart';
 import '../services/supabase_auth_service.dart';
 import '../features/exercises/presentation/exercises_screen.dart';
+import 'symptom_tracker_screen.dart'; // Add import for symptom tracker screen
+import 'patient_profile_screen.dart'; // Added import for patient profile screen
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -73,35 +79,65 @@ class HomeScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildSummaryCard(
-                  context,
-                  title: 'Breath Analysis',
-                  status: 'Breathing patterns normal',
-                  buttonText: 'View Details',
-                  onPressed: () {
-                    // Navigate to breath analysis details
-                    // TODO: Implement navigation to breath analysis details screen
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Navigate to Breath Analysis Details')),
-                    );
-                  },
-                  icon: Icons.air,
-                  color: Colors.blueAccent,
-                ),
-                _buildSummaryCard(
-                  context,
-                  title: 'Speech Analysis',
-                  status: 'Speech normal',
-                  buttonText: 'View Details',
-                  onPressed: () {
-                    // Navigate to speech analysis details
-                    // TODO: Implement navigation to speech analysis details screen
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Navigate to Speech Analysis Details')),
-                    );
-                  },
-                  icon: Icons.record_voice_over,
-                  color: Colors.orangeAccent,
+                Card(
+                  elevation: 6,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  child: Container(
+                    width: (MediaQuery.of(context).size.width - 48) / 2,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blueAccent.shade700, Colors.blueAccent.shade200],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.analytics, size: 48, color: Colors.white),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                'Analysis',
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Breath and Speech Analysis',
+                          style: const TextStyle(fontSize: 16, color: Colors.white70),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            // Navigate to Analysis Selection Screen
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (context) => const AnalysisSelectionScreen()),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.blueAccent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            minimumSize: const Size(double.infinity, 48),
+                          ),
+                          child: const Text('Select Analysis'),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -135,9 +171,9 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.play_arrow,
                   label: 'Start Monitoring',
                   onPressed: () {
-                    // Start live monitoring
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Start Monitoring pressed')),
+                    // Navigate to Monitoring Screen using MaterialPageRoute
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const MonitoringScreen()),
                     );
                   },
                 ),
@@ -148,7 +184,7 @@ class HomeScreen extends StatelessWidget {
                   onPressed: () {
                     // View history
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('View History pressed')),
+                      const SnackBar(content: Text('View History yet to be implemented')),
                     );
                   },
                 ),
@@ -163,6 +199,17 @@ class HomeScreen extends StatelessWidget {
                     );
                   },
                 ),
+                _buildActionButton(
+                  context,
+                  icon: Icons.healing,
+                  label: 'Symptom Tracker',
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const SymptomTrackerScreen()),
+                    );
+                  },
+                ),
+                
               ],
             ),
           ],

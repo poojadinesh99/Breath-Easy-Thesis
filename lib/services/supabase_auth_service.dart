@@ -38,7 +38,8 @@ class SupabaseAuthService {
 
   // Sign out
   Future<void> signOut() async {
-    await _client.auth.signOut();
+    // DEV ONLY: Clear session on app start
+    // await _client.auth.signOut();
   }
 
   // Check if Supabase connection is working by querying users table
@@ -51,6 +52,48 @@ class SupabaseAuthService {
       return true;
     } catch (e) {
       return false;
+    }
+  }
+
+  // Insert symptom records into Supabase symptoms table
+  Future<void> insertSymptoms({
+    required String userId,
+    required List<Map<String, dynamic>> symptoms,
+    String? customSymptom,
+  }) async {
+    try {
+      final now = DateTime.now().toUtc().toIso8601String();
+
+      // Prepare list of records to insert
+      List<Map<String, dynamic>> records = [];
+
+      for (var symptom in symptoms) {
+        records.add({
+          'user_id': userId,
+          'symptom_type': symptom['name'],
+          'severity': symptom['intensity'] != null ? (symptom['intensity'] as double).round() : 0,
+          'notes': null,
+          'logged_at': now,
+        });
+      }
+
+      // If customSymptom is provided, add it as a separate record with severity 0 and notes
+      if (customSymptom != null && customSymptom.trim().isNotEmpty) {
+        records.add({
+          'user_id': userId,
+          'symptom_type': 'Other',
+          'severity': 0,
+          'notes': customSymptom.trim(),
+          'logged_at': now,
+        });
+      }
+
+      final response = await _client.from('symptoms').insert(records);
+
+      // If you want to check for errors, handle exceptions here
+      // The new Supabase Dart SDK throws exceptions on errors
+    } catch (e) {
+      throw Exception('Error inserting symptoms: $e');
     }
   }
 }

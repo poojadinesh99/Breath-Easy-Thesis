@@ -5,6 +5,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/home_screen.dart';
 import 'features/exercises/presentation/exercises_screen.dart';
 import 'screens/splash_screen.dart';
+import 'screens/speech_analysis_screen.dart';
+import 'screens/breath_analysis_screen.dart';
+import 'screens/analysis_selection_screen.dart';
+import 'screens/monitoring_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,7 +37,7 @@ class _BreatheasyAppState extends State<BreatheasyApp> {
 
   static final List<Widget> _widgetOptions = <Widget>[
     const HomeScreen(),
-    const PlaceholderWidget(title: 'Monitoring'),
+    const MonitoringScreen(),
     const ExercisesScreen(),
     const PlaceholderWidget(title: 'Alerts'),
     const PlaceholderWidget(title: 'Profile'),
@@ -52,14 +56,20 @@ class _BreatheasyAppState extends State<BreatheasyApp> {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      initialRoute: '/',
-routes: {
-  '/': (context) => const SplashScreen(),
-  '/home': (context) => const HomeScreen(),
-  '/login': (context) => const LoginScreen(),
-  '/splash': (context) => const SplashScreen(), // Optional but used in signOut
-},
-
+      home: Scaffold(
+        body: _widgetOptions.elementAt(_selectedIndex),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+            BottomNavigationBarItem(icon: Icon(Icons.monitor), label: 'Monitoring'),
+            BottomNavigationBarItem(icon: Icon(Icons.fitness_center), label: 'Exercises'),
+            BottomNavigationBarItem(icon: Icon(Icons.warning), label: 'Alerts'),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          ],
+        ),
+      ),
     );
   }
 }
