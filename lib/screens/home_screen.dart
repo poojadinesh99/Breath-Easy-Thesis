@@ -32,7 +32,7 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text('Breatheasy Dashboard'),
+        
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -99,17 +99,8 @@ class HomeScreen extends StatelessWidget {
                         Row(
                           children: [
                             Icon(Icons.analytics, size: 48, color: Colors.white),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                'Analysis',
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
+                            const SizedBox(width: 18),
+                            
                           ],
                         ),
                         const SizedBox(height: 8),
