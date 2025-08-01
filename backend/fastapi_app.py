@@ -8,7 +8,9 @@ import os
 import joblib
 import tempfile
 import requests
-from backend.extract_spectrogram import extract_features
+import sys
+sys.path.append(os.path.dirname(__file__))  # Add current directory to sys.path
+from extract_spectrogram import extract_features
 
 app = FastAPI()
 
