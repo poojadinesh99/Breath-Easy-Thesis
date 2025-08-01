@@ -78,8 +78,8 @@ async def predict(file: UploadFile = File(None), audio_url: str = Form(None)):
             os.remove(tmp_file_path)
 
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+#if __name__ == "__main__":
+   # uvicorn.run(app, host="0.0.0.0", port=8000)
 
 @app.get("/")
 def read_root():
