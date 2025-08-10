@@ -56,20 +56,23 @@ class _BreatheasyAppState extends State<BreatheasyApp> {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: Scaffold(
-        body: _widgetOptions.elementAt(_selectedIndex),
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.monitor), label: 'Monitoring'),
-            BottomNavigationBarItem(icon: Icon(Icons.fitness_center), label: 'Exercises'),
-            BottomNavigationBarItem(icon: Icon(Icons.warning), label: 'Alerts'),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-          ],
-        ),
-      ),
+      routes: {
+    '/home': (context) => const DashboardWithNav(),
+    '/login': (context) => const LoginScreen(),
+    // Add more named routes if needed
+  },
+
+      home: Builder(
+  builder: (context) {
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) {
+      return const LoginScreen(); // Not logged in → show login
+    } else {
+      return const DashboardWithNav(); // Logged in → show dashboard
+    }
+  },
+),
+
     );
   }
 }
@@ -86,6 +89,50 @@ class PlaceholderWidget extends StatelessWidget {
         '$title Screen\n(Coming Soon)',
         textAlign: TextAlign.center,
         style: const TextStyle(fontSize: 24),
+      ),
+    );
+  }
+}
+
+
+class DashboardWithNav extends StatefulWidget {
+  const DashboardWithNav({Key? key}) : super(key: key);
+
+  @override
+  State<DashboardWithNav> createState() => _DashboardWithNavState();
+}
+
+class _DashboardWithNavState extends State<DashboardWithNav> {
+  int _selectedIndex = 0;
+
+  static final List<Widget> _widgetOptions = <Widget>[
+    const HomeScreen(),
+    const MonitoringScreen(),
+    const ExercisesScreen(),
+    const PlaceholderWidget(title: 'Alerts'),
+    const PlaceholderWidget(title: 'Profile'),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _widgetOptions.elementAt(_selectedIndex),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.monitor), label: 'Monitoring'),
+          BottomNavigationBarItem(icon: Icon(Icons.fitness_center), label: 'Exercises'),
+          BottomNavigationBarItem(icon: Icon(Icons.warning), label: 'Alerts'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        ],
       ),
     );
   }

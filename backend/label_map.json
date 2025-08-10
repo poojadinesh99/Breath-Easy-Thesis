@@ -1,0 +1,18 @@
+{
+    "Asthma": 0,
+    "Bronchiectasis": 1,
+    "Bronchiolitis": 2,
+    "COPD": 3,
+    "Healthy": 4,
+    "LRTI": 5,
+    "Pneumonia": 6,
+    "URTI": 7,
+    "healthy": 8,
+    "no_resp_illness_exposed": 9,
+    "positive_asymp": 10,
+    "positive_mild": 11,
+    "positive_moderate": 12,
+    "recovered_full": 13,
+    "resp_illness_not_identified": 14,
+    "under_validation": 15
+}

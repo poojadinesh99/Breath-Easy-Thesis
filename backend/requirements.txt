@@ -1,6 +1,11 @@
 fastapi
 uvicorn
-numpy
+pydub
+python-multipart
 scikit-learn
 librosa
-python-multipart
+numpy
+pandas
+joblib
+transformers
+huggingface_hub
