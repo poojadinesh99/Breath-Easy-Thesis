@@ -90,6 +90,5 @@ class SymptomHistoryVisualizationScreen extends StatelessWidget {
 class SymptomData {
   final DateTime date;
   final double intensity;
-
   SymptomData(this.date, this.intensity);
 }
