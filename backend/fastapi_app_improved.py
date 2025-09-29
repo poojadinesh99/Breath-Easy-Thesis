@@ -14,8 +14,10 @@ from typing import Dict, Any
 
 # === Import OpenSMILE helper ===
 from utils.opensmile_utils import extract_features_for_inference
-MODEL_PATH = os.path.join("ml", "models", "model_opensmile.pkl")
-LABEL_MAP_PATH = os.path.join("ml", "models", "label_map.json")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.getenv("MODEL_PATH", os.path.join(BASE_DIR, "ml", "models", "model_opensmile.pkl"))
+LABEL_MAP_PATH = os.getenv("LABEL_MAP_PATH", os.path.join(BASE_DIR, "ml", "models", "label_map.json"))
+
 model = joblib.load(MODEL_PATH)
 
 with open(LABEL_MAP_PATH) as f:
