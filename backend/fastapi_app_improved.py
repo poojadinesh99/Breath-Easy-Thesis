@@ -12,16 +12,36 @@ import logging
 import json
 from typing import Dict, Any
 
+try:
+    import whisper
+except ImportError:
+    whisper = None
+
 # === Import OpenSMILE helper ===
 from utils.opensmile_utils import extract_features_for_inference
+
+# Global variables - will be loaded on startup
+model = None
+label_map = None
+inv_label_map = None
+model_type = None
+whisper_model = None
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.getenv("MODEL_PATH", os.path.join(BASE_DIR, "ml", "models", "model_opensmile.pkl"))
 LABEL_MAP_PATH = os.getenv("LABEL_MAP_PATH", os.path.join(BASE_DIR, "ml", "models", "label_map.json"))
 
-model = joblib.load(MODEL_PATH)
+# OpenSMILE feature config (must match training)
+OS_FEATURE_SET = "eGeMAPS"       # or "ComParE_2016"
+OS_FEATURE_LEVEL = "func"        # "func" (functionals) or "lld"
+OS_AGG_IF_LLD = "meanstd"        # aggregation if LLD
 
-with open(LABEL_MAP_PATH) as f:
-    label_map = json.load(f)
+# Whisper configuration
+WHISPER_MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "base")
+
+# Optional HF fallback
+HF_API_TOKEN = os.getenv("HF_TOKEN")
+HF_MODEL_ENDPOINT = "https://api-inference.huggingface.co/models/PoojaDinesh99/breathe-easy-dualnet"
 # -----------------------------------------------------------------------------
 # App + CORS
 # -----------------------------------------------------------------------------
@@ -87,7 +107,22 @@ def _load_model_and_labels():
         # fallback generic labels if missing
         inv_label_map = {}
 
-_load_model_and_labels()
+@app.on_event("startup")
+async def startup_event():
+    """Load model and initialize Whisper on startup"""
+    _load_model_and_labels()
+    await _load_whisper_model()
+
+async def _load_whisper_model():
+    """Load Whisper model for speech transcription"""
+    global whisper_model
+    try:
+        logger.info(f"Loading Whisper model: {WHISPER_MODEL_SIZE}")
+        whisper_model = whisper.load_model(WHISPER_MODEL_SIZE)
+        logger.info("✅ Whisper model loaded successfully")
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to load Whisper model: {e}")
+        whisper_model = None
 
 # -----------------------------------------------------------------------------
 # Helpers
@@ -286,16 +321,6 @@ async def predict_unified(
                 os.remove(tmp_path)
             except Exception:
                 pass
-
-@app.get("/health")
-def health_check():
-    return {
-        "status": "healthy",
-        "local_model_available": model is not None,
-        "model_type": model_type,
-        "labels": inv_label_map,
-        "hf_token_available": bool(HF_API_TOKEN),
-    }
 
 @app.get("/")
 async def root():
