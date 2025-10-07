@@ -1,0 +1,30 @@
+# Core FastAPI dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# ML and data processing (lightweight versions)
+scikit-learn==1.3.2
+numpy==1.24.4
+pandas==2.0.3
+joblib==1.3.2
+requests==2.31.0
+python-dotenv==1.0.0
+
+# Audio processing (minimal for deployment)
+opensmile==2.4.2
+
+# Hugging Face integration
+huggingface_hub==0.17.3
+
+# Environment management
+python-dotenv==1.0.0
+
+# Optional heavy dependencies - only install if really needed
+# torch --index-url https://download.pytorch.org/whl/cpu
+# torchaudio --index-url https://download.pytorch.org/whl/cpu  
+# openai-whisper
+
+# Plotting (optional)
+# matplotlib==3.7.5
+# seaborn==0.12.2

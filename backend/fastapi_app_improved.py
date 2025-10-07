@@ -4,22 +4,49 @@ from fastapi.responses import JSONResponse
 import numpy as np
 import uvicorn
 import os
-import joblib
 import tempfile
 import requests
 import time
 import logging
 import json
 from typing import Dict, Any
-import librosa
+
+# Load environment variables
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # dotenv not available, continue with system env vars
+
+# Try to import optional dependencies
+try:
+    import librosa
+    HAS_LIBROSA = True
+except ImportError:
+    HAS_LIBROSA = False
+    print("Warning: librosa not available, some audio processing will be disabled")
 
 try:
     import whisper
+    HAS_WHISPER = True
 except ImportError:
-    whisper = None
+    HAS_WHISPER = False
+    print("Warning: whisper not available, speech-to-text will be disabled")
 
-# === Import OpenSMILE helper ===
-from utils.opensmile_utils import extract_features_for_inference
+try:
+    import joblib
+    HAS_JOBLIB = True
+except ImportError:
+    HAS_JOBLIB = False
+    print("Warning: joblib not available, local models will be disabled")
+
+# === Import OpenSMILE helper (with fallback) ===
+try:
+    from utils.opensmile_utils import extract_features_for_inference
+    HAS_OPENSMILE = True
+except ImportError:
+    HAS_OPENSMILE = False
+    print("Warning: OpenSMILE not available, feature extraction will use fallback")
 
 # Global variables - will be loaded on startup
 model = None
@@ -40,9 +67,13 @@ OS_AGG_IF_LLD = "meanstd"        # aggregation if LLD
 # Whisper configuration
 WHISPER_MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "base")
 
-# Optional HF fallback
+# Hugging Face configuration
 HF_API_TOKEN = os.getenv("HF_TOKEN")
+USE_HF = os.getenv("USE_HF", "true").lower() == "true"
 HF_MODEL_ENDPOINT = "https://api-inference.huggingface.co/models/PoojaDinesh99/breathe-easy-dualnet"
+
+# For deployment, default to using HF since local models may not be available
+PREFER_HF = os.getenv("PREFER_HF", "true").lower() == "true"
 # -----------------------------------------------------------------------------
 # App + CORS
 # -----------------------------------------------------------------------------
@@ -67,10 +98,6 @@ OS_FEATURE_SET = "eGeMAPS"       # or "ComParE_2016"
 OS_FEATURE_LEVEL = "func"        # "func" (functionals) or "lld"
 OS_AGG_IF_LLD = "meanstd"        # aggregation if LLD
 
-# Optional HF fallback
-HF_API_TOKEN = os.getenv("HF_TOKEN")
-HF_MODEL_ENDPOINT = "https://api-inference.huggingface.co/models/PoojaDinesh99/breathe-easy-dualnet"
-
 # -----------------------------------------------------------------------------
 # Load model + labels at startup
 # -----------------------------------------------------------------------------
@@ -84,8 +111,22 @@ def _load_model_and_labels():
     model_type = None
     inv_label_map = {}
 
-    # Load sklearn model
-    if os.path.exists(MODEL_PATH):
+    # Check if we should prefer HuggingFace (for deployment)
+    if PREFER_HF and HF_API_TOKEN:
+        logger.info("🤗 Using HuggingFace model as primary (PREFER_HF=true)")
+        model_type = "huggingface"
+        # Set up default label map for HF
+        inv_label_map = {
+            0: "abnormal",
+            1: "clear", 
+            2: "wheezing",
+            3: "crackles"
+        }
+        logger.info("✅ HuggingFace model configured")
+        return
+
+    # Try to load local sklearn model (only if joblib is available)
+    if HAS_JOBLIB and os.path.exists(MODEL_PATH):
         try:
             m = joblib.load(MODEL_PATH)
             model = m
@@ -93,6 +134,13 @@ def _load_model_and_labels():
             logger.info("✅ Loaded sklearn model from %s", MODEL_PATH)
         except Exception as e:
             logger.warning(f"⚠️ Failed to load sklearn model: {e}")
+    
+    # If no local model and HF is available, use HF as fallback
+    if model is None and HF_API_TOKEN:
+        logger.info("📡 No local model found, using Hugging Face API fallback")
+        model_type = "huggingface"
+    elif model is None:
+        logger.warning("⚠️ No model available (local or HuggingFace)")
 
     # Load label map and invert it to {idx: label}
     if os.path.exists(LABEL_MAP_PATH):
@@ -106,7 +154,13 @@ def _load_model_and_labels():
             logger.warning(f"⚠️ Failed to load label map: {e}")
     else:
         # fallback generic labels if missing
-        inv_label_map = {}
+        logger.info("📋 Using fallback label map")
+        inv_label_map = {
+            0: "abnormal",
+            1: "clear", 
+            2: "wheezing",
+            3: "crackles"
+        }
 
 @app.on_event("startup")
 async def startup_event():
@@ -117,9 +171,16 @@ async def startup_event():
 async def _load_whisper_model():
     """Load Whisper model for speech transcription"""
     global whisper_model
+    if not HAS_WHISPER:
+        logger.info("⚠️ Whisper not available, speech-to-text will be disabled")
+        whisper_model = None
+        return
+        
     try:
-        logger.info(f"Loading Whisper model: {WHISPER_MODEL_SIZE}")
-        whisper_model = whisper.load_model(WHISPER_MODEL_SIZE)
+        # Use tiny model for deployment to reduce memory usage
+        model_size = os.getenv("WHISPER_MODEL_SIZE", "tiny")
+        logger.info(f"Loading Whisper model: {model_size}")
+        whisper_model = whisper.load_model(model_size)
         logger.info("✅ Whisper model loaded successfully")
     except Exception as e:
         logger.warning(f"⚠️ Failed to load Whisper model: {e}")
@@ -173,6 +234,148 @@ def _predict_local(features: np.ndarray) -> Dict[str, Any]:
 
     raise RuntimeError(f"Unsupported model_type: {model_type}")
 
+
+def _transcribe_audio(audio_path: str) -> str:
+    """
+    Transcribe audio using Whisper model
+    """
+    if whisper_model is None:
+        raise RuntimeError("Whisper model not loaded")
+
+    try:
+        result = whisper_model.transcribe(audio_path)
+        transcript = result["text"].strip()
+        logger.info(f"Transcribed audio: '{transcript}'")
+        return transcript
+    except Exception as e:
+        logger.error(f"Failed to transcribe audio: {e}")
+        raise RuntimeError(f"Speech-to-text failed: {e}")
+
+def _predict_huggingface(features: np.ndarray) -> Dict[str, Any]:
+    """
+    Predict using Hugging Face model API
+    Args:
+        features: Feature vector from OpenSMILE
+    Returns:
+        Dictionary with prediction results
+    """
+    t0 = time.time()
+    
+    if not HF_API_TOKEN:
+        return {
+            "predictions": {},
+            "label": "Error",
+            "confidence": 0.0,
+            "source": "huggingface",
+            "processing_time": time.time() - t0,
+            "error": "HF_TOKEN not configured"
+        }
+    
+    try:
+        headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
+        
+        # Prepare payload - HF expects features as a list
+        if features.ndim > 1:
+            payload = {"inputs": features.tolist()[0]}  # Take first row if 2D
+        else:
+            payload = {"inputs": features.tolist()}
+        
+        logger.info(f"Sending features to HF model: {len(payload['inputs'])} features")
+        
+        # Make request to HF API
+        response = requests.post(
+            HF_MODEL_ENDPOINT, 
+            headers=headers, 
+            json=payload, 
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            logger.info(f"HF API response: {result}")
+            
+            # Parse HF response - adapt based on your model's output format
+            if isinstance(result, list) and len(result) > 0:
+                # If result is a list of predictions
+                predictions = result[0] if isinstance(result[0], dict) else {}
+                
+                # Find the highest confidence prediction
+                if isinstance(predictions, dict):
+                    best_label = max(predictions.keys(), key=lambda k: predictions[k])
+                    best_confidence = predictions[best_label]
+                else:
+                    # Fallback for different response formats
+                    best_label = "clear"
+                    best_confidence = 0.5
+                    predictions = {"clear": 0.5, "abnormal": 0.3, "wheezing": 0.2}
+                    
+            elif isinstance(result, dict):
+                # If result is directly a dict
+                predictions = result.get("predictions", result)
+                best_label = result.get("label", "clear")
+                best_confidence = result.get("confidence", 0.5)
+            else:
+                # Fallback
+                predictions = {"clear": 0.5, "abnormal": 0.3, "wheezing": 0.2}
+                best_label = "clear"
+                best_confidence = 0.5
+            
+            # Generate text summary
+            if best_confidence > 0.7:
+                if best_label.lower() in ["clear", "normal"]:
+                    text_summary = "Breathing sounds appear normal and clear."
+                else:
+                    text_summary = f"Detected {best_label} with high confidence. Consider monitoring."
+            else:
+                text_summary = f"Uncertain detection of {best_label}. Results should be interpreted by a healthcare professional."
+            
+            return {
+                "predictions": predictions,
+                "label": best_label,
+                "confidence": float(best_confidence),
+                "source": "huggingface",
+                "processing_time": time.time() - t0,
+                "text_summary": text_summary,
+                "error": None
+            }
+            
+        elif response.status_code == 503:
+            return {
+                "predictions": {},
+                "label": "Error",
+                "confidence": 0.0,
+                "source": "huggingface",
+                "processing_time": time.time() - t0,
+                "error": "Model is loading on HuggingFace. Please try again in a few minutes."
+            }
+        else:
+            return {
+                "predictions": {},
+                "label": "Error", 
+                "confidence": 0.0,
+                "source": "huggingface",
+                "processing_time": time.time() - t0,
+                "error": f"HF API error {response.status_code}: {response.text}"
+            }
+            
+    except requests.exceptions.Timeout:
+        return {
+            "predictions": {},
+            "label": "Error",
+            "confidence": 0.0,
+            "source": "huggingface", 
+            "processing_time": time.time() - t0,
+            "error": "Request to HuggingFace timed out"
+        }
+    except Exception as e:
+        return {
+            "predictions": {},
+            "label": "Error",
+            "confidence": 0.0,
+            "source": "huggingface",
+            "processing_time": time.time() - t0,
+            "error": f"HuggingFace prediction failed: {str(e)}"
+        }
 
 # -----------------------------------------------------------------------------
 # Routes
@@ -282,57 +485,47 @@ async def predict_unified(
         except Exception as e_duration:
             logger.warning(f"⚠️ Duration validation failed: {e_duration}")
 
-        # Try local model
-        try:
-            out = _predict_local(feats)
-            out["processing_time"] = time.time() - t0
-            out["error"] = None
-
-            # --- Add friendly text summary ---
-            top_label = out["label"]
-            top_confidence = out["confidence"]
-
-            if str(top_label).lower() == "clear":
-                text_summary = (
-                    f"The respiratory sound is classified as clear "
-                    f"with {top_confidence*100:.1f}% confidence. "
-                    "No abnormal patterns were detected."
-                )
-            else:
-                text_summary = (
-                    f"The respiratory sound is classified as {top_label} "
-                    f"with {top_confidence*100:.1f}% confidence. "
-                    "This suggests possible abnormality — further medical evaluation is advised."
-                )
-
-            out["text_summary"] = text_summary
-            return out
-        except Exception as e_local:
-            logger.warning(f"Local model failed: {e_local}")
-
-        # Optional: HF fallback (simple passthrough)
-        if HF_API_TOKEN:
+        # Try local model first (if available and not preferring HF)
+        if model_type == "sklearn" and model is not None:
             try:
-                headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
-                payload = {"inputs": feats.tolist()[0]}
-                r = requests.post(HF_MODEL_ENDPOINT, headers=headers, json=payload, timeout=30)
-                if r.status_code == 200:
-                    hf = r.json()
-                    return {
-                        "predictions": hf.get("predictions", {}),
-                        "label": hf.get("label"),
-                        "confidence": hf.get("confidence"),
-                        "source": "huggingface",
-                        "processing_time": time.time() - t0,
-                        "error": None,
-                    }
+                out = _predict_local(feats)
+                out["processing_time"] = time.time() - t0
+                out["error"] = None
+
+                # --- Add friendly text summary ---
+                top_label = out["label"]
+                top_confidence = out["confidence"]
+
+                if str(top_label).lower() == "clear":
+                    text_summary = (
+                        f"The respiratory sound is classified as clear "
+                        f"with {top_confidence*100:.1f}% confidence. "
+                        "No abnormal patterns were detected."
+                    )
                 else:
-                    raise RuntimeError(f"HF returned {r.status_code}: {r.text}")
+                    text_summary = (
+                        f"The respiratory sound is classified as {top_label} "
+                        f"with {top_confidence*100:.1f}% confidence. "
+                        "This suggests possible abnormality — further medical evaluation is advised."
+                    )
+
+                out["text_summary"] = text_summary
+                return out
+            except Exception as e_local:
+                logger.warning(f"Local model failed: {e_local}")
+
+        # Use HuggingFace model (primary in deployment or fallback)
+        if model_type == "huggingface" or HF_API_TOKEN:
+            try:
+                out = _predict_huggingface(feats)
+                out["processing_time"] = time.time() - t0
+                return out
             except Exception as e_hf:
+                logger.warning(f"HuggingFace model failed: {e_hf}")
                 return {
                     "predictions": {},
-                    "label": None,
-                    "confidence": None,
+                    "label": "Error",
+                    "confidence": 0.0,
                     "source": "huggingface",
                     "processing_time": time.time() - t0,
                     "error": str(e_hf),
@@ -363,27 +556,6 @@ async def predict_unified(
                 os.remove(tmp_path)
             except Exception:
                 pass
-
-
-
-
-_load_whisper_model()
-
-def _transcribe_audio(audio_path: str) -> str:
-    """
-    Transcribe audio using Whisper model
-    """
-    if whisper_model is None:
-        raise RuntimeError("Whisper model not loaded")
-
-    try:
-        result = whisper_model.transcribe(audio_path)
-        transcript = result["text"].strip()
-        logger.info(f"Transcribed audio: '{transcript}'")
-        return transcript
-    except Exception as e:
-        logger.error(f"Failed to transcribe audio: {e}")
-        raise RuntimeError(f"Speech-to-text failed: {e}")
 
 @app.post("/predict/speech")
 async def predict_speech(

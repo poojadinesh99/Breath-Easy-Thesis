@@ -6,11 +6,17 @@ services:
     region: frankfurt
     branch: main
     rootDirectory: backend
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements_deployment.txt
     startCommand: uvicorn fastapi_app_improved:app --host 0.0.0.0 --port 10000
     autoDeploy: true
     plan: free
     healthCheckPath: /health
     envVars:
-      - key: MODEL_PATH
-        value: "/app/ml/models/model_opensmile.pkl"
+      - key: PREFER_HF
+        value: "true"
+      - key: USE_HF
+        value: "true"
+      - key: WHISPER_MODEL_SIZE
+        value: "tiny"
+      - key: HF_TOKEN
+        value: "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"
