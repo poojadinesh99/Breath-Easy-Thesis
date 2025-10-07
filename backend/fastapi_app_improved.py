@@ -11,6 +11,7 @@ import time
 import logging
 import json
 from typing import Dict, Any
+import librosa
 
 try:
     import whisper
@@ -210,16 +211,22 @@ async def predict_unified(
 
         # Resolve input into a local temp file path
         if file is not None:
+            logger.info(f"Unified endpoint received file upload: {file.filename}, content_type: {file.content_type}")
             suffix = os.path.splitext(file.filename or "")[1] or ".wav"
             fd, tmp_path = tempfile.mkstemp(suffix=suffix)
             os.close(fd)
             with open(tmp_path, "wb") as f:
-                f.write(await file.read())
+                content = await file.read()
+                f.write(content)
+            logger.info(f"Unified endpoint saved upload to: {tmp_path}, size: {len(content)} bytes")
         elif audio_url:
+            logger.info(f"Unified endpoint using audio_url: {audio_url}")
             tmp_path = _download_to_tmp(audio_url)
         elif file_url:
+            logger.info(f"Unified endpoint using file_url: {file_url}")
             tmp_path = _download_to_tmp(file_url)
         else:
+            logger.error("Unified endpoint: No audio provided")
             return JSONResponse(
                 status_code=400,
                 content={
@@ -232,6 +239,22 @@ async def predict_unified(
                 },
             )
 
+        # Validate audio duration before processing
+        is_valid, audio_duration = validate_audio_duration(tmp_path, min_duration=1.5)
+        if not is_valid:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "predictions": {},
+                    "label": "error",
+                    "confidence": 0.0,
+                    "source": None,
+                    "processing_time": time.time() - t0,
+                    "error": f"Audio too short ({audio_duration:.1f}s). Please record at least 2 seconds for better accuracy.",
+                    "text_summary": "Recording too short - please try recording for at least 2-3 seconds."
+                },
+            )
+
         # Extract OpenSMILE features to match training
         feats = extract_features_for_inference(
             tmp_path,
@@ -239,6 +262,25 @@ async def predict_unified(
             feature_level=OS_FEATURE_LEVEL,
             aggregate_if_lld=OS_AGG_IF_LLD,
         )
+
+        # Validate audio duration (Whisper requirement)
+        try:
+            duration = librosa.get_duration(filename=tmp_path)
+            logger.info(f"Audio duration: {duration} seconds")
+            if duration < 1.0:
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "predictions": {},
+                        "label": None,
+                        "confidence": None,
+                        "source": None,
+                        "processing_time": 0.0,
+                        "error": "Audio file is too short (less than 1 second).",
+                    },
+                )
+        except Exception as e_duration:
+            logger.warning(f"⚠️ Duration validation failed: {e_duration}")
 
         # Try local model
         try:
@@ -322,32 +364,8 @@ async def predict_unified(
             except Exception:
                 pass
 
-@app.get("/")
-async def root():
-    return {"message": "Breathe Easy API — use /predict/unified"}
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8000")))
 
-# === Import Whisper for speech-to-text ===
-import whisper
-from whisper import load_model
-
-# -----------------------------------------------------------------------------
-# Load Whisper model at startup
-# -----------------------------------------------------------------------------
-whisper_model = None
-WHISPER_MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "base")  # tiny, base, small, medium, large
-
-def _load_whisper_model():
-    global whisper_model
-    try:
-        logger.info(f"Loading Whisper model: {WHISPER_MODEL_SIZE}")
-        whisper_model = load_model(WHISPER_MODEL_SIZE)
-        logger.info("✅ Whisper model loaded successfully")
-    except Exception as e:
-        logger.error(f"❌ Failed to load Whisper model: {e}")
-        whisper_model = None
 
 _load_whisper_model()
 
@@ -399,16 +417,22 @@ async def predict_speech(
 
         # Resolve input into a local temp file path
         if file is not None:
+            logger.info(f"Speech endpoint received file upload: {file.filename}, content_type: {file.content_type}")
             suffix = os.path.splitext(file.filename or "")[1] or ".wav"
             fd, tmp_path = tempfile.mkstemp(suffix=suffix)
             os.close(fd)
             with open(tmp_path, "wb") as f:
-                f.write(await file.read())
+                content = await file.read()
+                f.write(content)
+            logger.info(f"Speech endpoint saved upload to: {tmp_path}, size: {len(content)} bytes")
         elif audio_url:
+            logger.info(f"Speech endpoint using audio_url: {audio_url}")
             tmp_path = _download_to_tmp(audio_url)
         elif file_url:
+            logger.info(f"Speech endpoint using file_url: {file_url}")
             tmp_path = _download_to_tmp(file_url)
         else:
+            logger.error("Speech endpoint: No audio provided")
             return JSONResponse(
                 status_code=400,
                 content={
@@ -474,3 +498,18 @@ def health_check():
 @app.get("/")
 async def root():
     return {"message": "Breathe Easy API — use /predict/unified or /predict/speech"}
+
+def validate_audio_duration(file_path: str, min_duration: float = 2.0) -> tuple[bool, float]:
+    """
+    Validate audio file duration.
+    Returns (is_valid, duration_seconds)
+    """
+    try:
+        duration = librosa.get_duration(path=file_path)
+        return duration >= min_duration, duration
+    except Exception as e:
+        logger.warning(f"Could not determine audio duration: {e}")
+        return True, 0.0  # Allow processing if we can't determine duration
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8000")))
