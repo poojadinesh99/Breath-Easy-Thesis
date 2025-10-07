@@ -25,8 +25,8 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
   String _currentStatus = 'Stopped';
   String _breathStatus = 'No data available yet';
   String _speechStatus = 'No data available yet';
-  String _breathLabel = '';
-  String _speechLabel = '';
+  String _breathLabel = 'Unknown';
+  String _speechLabel = 'Unknown';
   double _breathConfidence = 0.0;
   double _speechConfidence = 0.0;
   Timer? _analysisTimer;
@@ -123,26 +123,49 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
         _speechStatus = 'Recording 10-second sample...';
       });
 
-      // Ensure recorder is ready
+      // Ensure recorder is ready and permissions are granted
       if (!_recorder.isRecording) {
+        // Double-check permissions
+        var status = await Permission.microphone.status;
+        if (!status.isGranted) {
+          setState(() {
+            _breathStatus = 'Microphone permission denied';
+            _speechStatus = 'Microphone permission denied';
+          });
+          return;
+        }
+
         // Create a new temporary file for this chunk
         Directory tempDir = await getTemporaryDirectory();
         String chunkPath = '${tempDir.path}/monitoring_chunk_${DateTime.now().millisecondsSinceEpoch}.wav';
 
         print('Starting recording to: $chunkPath');
 
-        // Start recording
+        // Initialize recorder session with more explicit settings
+        await _recorder.openRecorder();
+        
+        // Start recording with explicit configuration for Android
         await _recorder.startRecorder(
           toFile: chunkPath,
           codec: Codec.pcm16WAV,
           sampleRate: 16000,
+          bitRate: 128000,
+          numChannels: 1,
         );
 
-        // Wait for 10 seconds while recording
-        await Future.delayed(const Duration(seconds: 10));
+        // Wait for 10 seconds while recording, with status updates
+        for (int i = 1; i <= 10; i++) {
+          await Future.delayed(const Duration(seconds: 1));
+          if (!_isRecording) break; // Exit if monitoring was stopped
+          setState(() {
+            _breathStatus = 'Recording... ${i}/10 seconds';
+            _speechStatus = 'Recording... ${i}/10 seconds';
+          });
+        }
 
         // Stop recording
         String? recordedPath = await _recorder.stopRecorder();
+        await _recorder.closeRecorder();
         print('Recording stopped. File: $recordedPath');
 
         // Verify the file was created and has content
@@ -168,10 +191,10 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
               });
 
               // Save to history
-              HistoryService.addEntry({
+              await HistoryService.addEntry({
                 'label': _breathLabel,
                 'confidence': _breathConfidence,
-                'source': 'Live Monitoring',
+                'source': 'Live Monitoring - Breath',
                 'timestamp': DateTime.now(),
                 'predictions': breathResult,
               });
@@ -192,10 +215,10 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
                 _speechStatus = speechResult['message'] ?? 'Speech analysis complete.';
               });
 
-              HistoryService.addEntry({
+              await HistoryService.addEntry({
                 'label': _speechLabel,
                 'confidence': _speechConfidence,
-                'source': 'Live Monitoring Speech',
+                'source': 'Live Monitoring - Speech',
                 'timestamp': DateTime.now(),
                 'predictions': speechResult,
               });
@@ -281,6 +304,11 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
   }
 
   Widget _buildConfidenceBadge(String label, double confidence) {
+    // Don't show confidence for unknown/empty labels
+    if (label.isEmpty || label == 'Unknown' || confidence <= 0.0) {
+      return const SizedBox.shrink();
+    }
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
