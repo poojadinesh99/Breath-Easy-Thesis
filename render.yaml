@@ -19,4 +19,4 @@ services:
       - key: WHISPER_MODEL_SIZE
         value: "tiny"
       - key: HF_TOKEN
-        value: "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"
+        value: "your_hf_token_here"

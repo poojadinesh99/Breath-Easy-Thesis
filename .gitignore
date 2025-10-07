@@ -1,102 +1,150 @@
-# Flutter / Dart
-**/build/
-**/ios/Pods/
-**/ios/.symlinks/
-**/ios/Flutter/ephemeral/
-**/android/.gradle/
-**/android/captures/
-**/android/gradlew
-**/android/gradlew.bat
-**/android/local.properties
-**/android/key.properties
-**/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
-**/ios/Runner/GeneratedPluginRegistrant.*
-**/ios/Flutter/flutter_export_environment.sh
-**/ios/Flutter/.last_build_id
-**/ios/Flutter/App.framework
-**/ios/Flutter/Flutter.framework
-**/ios/Flutter/Flutter.podspec
-**/ios/Flutter/Generated.xcconfig
-**/ios/Flutter/ephemeral/
-**/macos/Flutter/ephemeral/
-**/linux/flutter/ephemeral/
-**/windows/flutter/ephemeral/
-**/coverage/
-**/test_results/
-**/flutter_*.png
-**/linked_*.ds
-**/unlinked.ds
-**/unlinked_spec.ds
-**/flutter_export_environment.sh
-**/ios/Flutter/.last_build_id
-**/ios/Flutter/App.framework
-**/ios/Flutter/Flutter.framework
-**/ios/Flutter/Flutter.podspec
-**/ios/Flutter/Generated.xcconfig
-**/ios/Flutter/ephemeral/
-**/macos/Flutter/ephemeral/
-**/linux/flutter/ephemeral/
-**/windows/flutter/ephemeral/
+# ==============================
+# Breath-Easy Thesis .gitignore
+# Flutter + Python (FastAPI/ML) + OpenSMILE
+# ==============================
 
-# Python
+# -------- Flutter / Dart --------
+# Core build/cache
+build/
+.dart_tool/
+.packages
+.pub/
+.flutter-plugins
+.flutter-plugins-dependencies
+coverage/
+# Some projects generate test results here
+**/test_results/
+
+# Platform-specific ephemeral
+ios/Flutter/.last_build_id
+ios/Flutter/ephemeral/
+macos/Flutter/ephemeral/
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+
+# CocoaPods
+ios/Pods/
+ios/.symlinks/
+
+# Android
+android/.gradle/
+android/local.properties
+# Do NOT ignore gradle wrapper scripts; keep them in VCS
+# (gradlew, gradlew.bat, gradle-wrapper.jar, gradle-wrapper.properties)
+
+# Xcode user data
+**/*.xcuserdatad/
+**/*.xcworkspace/xcuserdata/
+
+# Generated plugin registrants
+ios/Runner/GeneratedPluginRegistrant.*
+
+# -------- Python / FastAPI / ML --------
+# Bytecode & caches
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+
+# Virtual environments
 .venv/
+venv/
+env/
+ENV/
+venv.bak/
+env.bak/
+
+# Installer / pip logs
 pip-log.txt
 pip-delete-this-directory.txt
+
+# Testing / Coverage / Type checkers
 .tox/
+.nox/
 .coverage
 .coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-.git/
+.cache/
 .mypy_cache/
 .pytest_cache/
 .hypothesis/
-*.egg-info/
-.installed.cfg
-*.egg
+.pytype/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
 
-# Environment & Secrets
+# Jupyter
+.ipynb_checkpoints/
+
+# ML artifacts & reports (generated)
+backend/saved_models/
+backend/model/*.pkl
+backend/model/*.joblib
+**/models/
+**/checkpoints/
+**/runs/
+**/artifacts/
+# Generated reports (allow a README if desired)
+backend/reports/**
+!backend/reports/README.md
+
+# Logs & temp
+logs/
+*.log
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+*.rej
+
+# -------- OpenSMILE outputs --------
+# Common feature outputs & logs
+**/opensmile/**/output/**
+**/opensmile_output/**
+**/features/**/*.csv
+**/*_features.csv
+**/*.arff
+**/*.htk
+**/*.hdf5
+**/*opensmile*.log
+**/opensmile*.log
+
+# -------- Supabase / Secrets / Mobile keys --------
+.supabase/
 .env
-.env.local
-.env.*.local
-*.env
-secrets/
+.env.*
+!.env.example
+# Firebase/Google keys (keep out of VCS)
 google-services.json
-GoogleService-Info.plist
+ios/Runner/GoogleService-Info.plist
 *.jks
 *.keystore
 *.p12
 *.pem
 *.key
+*.der
 
-# IDE
+# -------- Node/JS (if used alongside) --------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# -------- IDE / Editor --------
 .vscode/
 .idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
 *.swp
 *.swo
 *~
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-*.sublime-project
 
-# OS
+# -------- OS files --------
 .DS_Store
 .DS_Store?
 ._*
@@ -105,36 +153,8 @@ GoogleService-Info.plist
 ehthumbs.db
 Thumbs.db
 
-# Logs
-*.log
-logs/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-.pnpm-debug.log*
-
-# Temporary files
-*.tmp
-*.temp
-*.bak
-*.backup
-*.orig
-*.rej
-*.swo
-*.swp
-*~.nib
-local.properties
-.DS_Store
-*.tmp
-*.temp
-*.bak
-*.backup
-*.orig
-*.rej
-*.swo
-*.swp
-*~.nib
-local.properties
-.DS_Store
-.env
+# -------- Archives --------
+*.zip
+*.tar
+*.tar.gz
+*.tgz
