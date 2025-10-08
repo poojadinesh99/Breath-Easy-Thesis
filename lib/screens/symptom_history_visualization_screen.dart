@@ -1,90 +1,101 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 
-class SymptomHistoryVisualizationScreen extends StatelessWidget {
+class SymptomHistoryVisualizationScreen extends StatefulWidget {
   const SymptomHistoryVisualizationScreen({super.key});
 
-  Future<List<charts.Series<SymptomData, DateTime>>> _createChartData() async {
-    final User? user = FirebaseAuth.instance.currentUser;
+  @override
+  State<SymptomHistoryVisualizationScreen> createState() => _SymptomHistoryVisualizationScreenState();
+}
+
+class _SymptomHistoryVisualizationScreenState extends State<SymptomHistoryVisualizationScreen> {
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _rows = [];
+  List<charts.Series<SymptomData, DateTime>> _series = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
-      return [];
+      setState(() { _error = 'Not logged in'; _loading = false; });
+      return;
     }
-
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('sessions')
-        .orderBy('timestamp')
-        .get();
-
-    Map<String, List<SymptomData>> symptomMap = {};
-
-    for (var doc in querySnapshot.docs) {
-      final data = doc.data();
-      final timestamp = data['timestamp'] as Timestamp?;
-      if (timestamp == null) continue;
-      final date = timestamp.toDate();
-
-      final symptoms = data['symptoms'] as List<dynamic>? ?? [];
-      for (var symptom in symptoms) {
-        final name = symptom['name'] ?? 'Unknown';
-        final intensity = (symptom['intensity'] ?? 0).toDouble();
-
-        symptomMap.putIfAbsent(name, () => []);
-        symptomMap[name]!.add(SymptomData(date, intensity));
-      }
+    try {
+      final data = await Supabase.instance.client
+          .from('symptoms')
+          .select()
+          .eq('user_id', user.id)
+          .order('logged_at', ascending: true)
+          .limit(1000);
+      _rows = List<Map<String,dynamic>>.from(data);
+      _buildSeries();
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      if (mounted) setState(() { _loading = false; });
     }
+  }
 
-    List<charts.Series<SymptomData, DateTime>> seriesList = [];
-
-    symptomMap.forEach((name, dataPoints) {
-      seriesList.add(
-        charts.Series<SymptomData, DateTime>(
-          id: name,
-          colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
-          domainFn: (SymptomData sd, _) => sd.date,
-          measureFn: (SymptomData sd, _) => sd.intensity,
-          data: dataPoints,
-        ),
+  void _buildSeries() {
+    Map<String, List<SymptomData>> grouped = {};
+    for (final row in _rows) {
+      final symptom = (row['symptom_type'] ?? 'Unknown') as String;
+      final severity = (row['severity'] ?? 0) as int;
+      final loggedAt = row['logged_at'];
+      DateTime? ts;
+      if (loggedAt is String) ts = DateTime.tryParse(loggedAt);
+      if (ts == null) continue;
+      grouped.putIfAbsent(symptom, () => []);
+      grouped[symptom]!.add(SymptomData(ts, severity.toDouble()));
+    }
+    _series = grouped.entries.map((e) {
+      return charts.Series<SymptomData, DateTime>(
+        id: e.key,
+        data: e.value,
+        domainFn: (SymptomData d, _) => d.date,
+        measureFn: (SymptomData d, _) => d.intensity,
+        colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
       );
-    });
-
-    return seriesList;
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Symptom History Visualization'),
-      ),
-      body: FutureBuilder<List<charts.Series<SymptomData, DateTime>>>(
-        future: _createChartData(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('No symptom data available.'));
-          }
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: charts.TimeSeriesChart(
-              snapshot.data!,
-              animate: true,
-              dateTimeFactory: const charts.LocalDateTimeFactory(),
-              behaviors: [
-                charts.SeriesLegend(),
-                charts.PanAndZoomBehavior(),
-              ],
-            ),
-          );
-        },
-      ),
+      appBar: AppBar(title: const Text('Symptom History Visualization'), actions: [
+        IconButton(onPressed: _load, icon: const Icon(Icons.refresh))
+      ]),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? _buildError()
+              : _series.isEmpty
+                  ? _buildEmpty()
+                  : Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: charts.TimeSeriesChart(
+                        _series,
+                        animate: true,
+                        dateTimeFactory: const charts.LocalDateTimeFactory(),
+                        behaviors: [
+                          charts.SeriesLegend(position: charts.BehaviorPosition.bottom, horizontalFirst: false, desiredMaxColumns: 2),
+                          charts.PanAndZoomBehavior(),
+                        ],
+                      ),
+                    ),
     );
   }
+
+  Widget _buildError() => Center(child: Text(_error!, style: const TextStyle(color: Colors.redAccent)));
+  Widget _buildEmpty() => const Center(child: Text('No symptom data available.'));
 }
 
 class SymptomData {

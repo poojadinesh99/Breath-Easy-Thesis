@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 _isLogin
                     ? 'Please sign in to continue'
-                    : 'Stay organised and live stress-free with you-do app',
+                    : 'Stay organised and live stress-free with Breath Easy app',
                 style: AppTheme.textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),

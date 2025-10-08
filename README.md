@@ -2,7 +2,7 @@
 
 ## Overview
 
-This Flutter app is designed to help users analyze their breathing patterns and track symptoms. The backend services are powered by Supabase, which provides authentication, database, and storage functionalities.
+This Flutter app isource venv/bin/activates designed to help users analyze their breathing patterns and track symptoms. The backend services are powered by Supabase, which provides authentication, database, and storage functionalities.
 
 ---
 
@@ -181,3 +181,61 @@ The Breath Easy Flutter app provides a user interface for breathing analysis, sy
 ---
 
 This documentation complements the backend setup instructions and provides guidance for working with the Flutter app.
+
+---
+
+## Docker Setup
+
+### Prerequisites
+
+- Docker installed on your system
+- Docker Compose installed on your system
+
+### Running with Docker
+
+1. **Clone the repository:**
+   ```bash
+   git clone <your-repo-url>
+   cd Breath-Easy-Thesis
+   ```
+
+2. **Set up environment variables:**
+   ```bash
+   cd backend
+   cp .env.example .env
+   # Edit .env with your actual Supabase credentials and API keys
+   ```
+
+3. **Build and run the application:**
+   ```bash
+   docker-compose up --build
+   ```
+
+4. **Access the application:**
+   - Backend API: http://localhost:8000
+   - Health check: http://localhost:8000/health
+   - API documentation: http://localhost:8000/docs
+
+### Docker Configuration
+
+- **Backend Service**: FastAPI application running on port 8000
+- **Volume Mounts**:
+  - `./backend:/app`: Live code reload during development
+  - `./data:/app/data`: Persistent storage for features and raw audio
+- **Environment**: Variables loaded from `backend/.env`
+- **Health Check**: Automatic health monitoring every 30 seconds
+
+### Development Workflow
+
+- Make changes to backend code in the `backend/` directory
+- The container will automatically reload due to volume mounting
+- View logs with: `docker-compose logs -f breath-easy-backend`
+- Stop the application: `docker-compose down`
+
+### Production Deployment
+
+For production deployment, consider:
+- Using environment-specific `.env` files
+- Setting up proper logging and monitoring
+- Configuring reverse proxy (nginx) for SSL termination
+- Using Docker secrets for sensitive environment variables

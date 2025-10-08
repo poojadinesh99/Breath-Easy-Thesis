@@ -1,28 +1,22 @@
-import 'package:breath_easy/screens/analysis_selection_screen.dart';
-import 'package:breath_easy/screens/breath_analysis_screen.dart';
-import 'package:breath_easy/screens/monitoring_screen.dart';
-import 'package:breath_easy/screens/speech_analysis_screen.dart';
 import 'package:flutter/material.dart';
 import '../services/supabase_auth_service.dart';
+import '../screens/analysis_selection_screen.dart';
+import '../screens/monitoring_screen.dart';
+import '../screens/speech_analysis_screen.dart';
+import '../screens/view_history_screen.dart';
+import '../screens/symptom_tracker_screen.dart';
+import '../screens/patient_profile_screen.dart';
 import '../features/exercises/presentation/exercises_screen.dart';
-import 'symptom_tracker_screen.dart'; // Add import for symptom tracker screen
-import 'patient_profile_screen.dart'; // Added import for patient profile screen
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  // Private method to get dynamic greeting based on current time
   String _getGreeting() {
     final hour = DateTime.now().hour;
-    if (hour >= 5 && hour < 12) {
-      return 'Good Morning';
-    } else if (hour >= 12 && hour < 17) {
-      return 'Good Afternoon';
-    } else if (hour >= 17 && hour < 21) {
-      return 'Good Evening';
-    } else {
-      return 'Good Night';
-    }
+    if (hour >= 5 && hour < 12) return 'Good Morning';
+    if (hour >= 12 && hour < 17) return 'Good Afternoon';
+    if (hour >= 17 && hour < 21) return 'Good Evening';
+    return 'Good Night';
   }
 
   @override
@@ -32,13 +26,22 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        
+        title: const Text("BreatheEasy"),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'More',
+            onPressed: () {
+              // Exercises moved to secondary menu
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const ExercisesScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Sign Out',
             onPressed: () async {
-              // Call sign out and navigate to splash screen
               try {
                 await SupabaseAuthService().signOut();
                 Navigator.of(context).pushNamedAndRemoveUntil(
@@ -46,7 +49,6 @@ class HomeScreen extends StatelessWidget {
                   (Route<dynamic> route) => false,
                 );
               } catch (e) {
-                // Handle sign out error if needed
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Sign out failed: $e')),
                 );
@@ -55,90 +57,82 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Greeting
             Text(
               '${_getGreeting()}, Patient!',
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 26,
                 fontWeight: FontWeight.bold,
                 color: primaryColor,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             const Text(
               "Your health at a glance",
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 24),
 
-            // Summary Cards
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Card(
-                  elevation: 6,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: Container(
-                    width: (MediaQuery.of(context).size.width - 48) / 2,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.blueAccent.shade700, Colors.blueAccent.shade200],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.analytics, size: 48, color: Colors.white),
-                            const SizedBox(width: 18),
-                            
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Breath and Speech Analysis',
-                          style: const TextStyle(fontSize: 16, color: Colors.white70),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            // Navigate to Analysis Selection Screen
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (context) => const AnalysisSelectionScreen()),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.blueAccent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            minimumSize: const Size(double.infinity, 48),
-                          ),
-                          child: const Text('Select Analysis'),
-                        ),
-                      ],
-                    ),
+            // Main Analysis Card
+            Card(
+              elevation: 6,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              clipBehavior: Clip.antiAlias,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue.shade800, Colors.blue.shade400],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
-              ],
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.analytics, size: 48, color: Colors.white),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Breath & Speech Analysis',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const AnalysisSelectionScreen()),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.blue.shade800,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text("Select Analysis"),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 24),
 
             // Alerts Section
-            const Text(
-              'Alerts',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
+            const Text("Alerts", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             _buildAlertCard(
               context,
@@ -148,11 +142,8 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Quick Actions
-            const Text(
-              'Quick Actions',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
+            const Text("Quick Actions", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
             Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -162,9 +153,8 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.play_arrow,
                   label: 'Start Monitoring',
                   onPressed: () {
-                    // Navigate to Monitoring Screen using MaterialPageRoute
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const MonitoringScreen()),
+                      MaterialPageRoute(builder: (_) => const MonitoringScreen()),
                     );
                   },
                 ),
@@ -173,20 +163,8 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.history,
                   label: 'View History',
                   onPressed: () {
-                    // View history
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('View History yet to be implemented')),
-                    );
-                  },
-                ),
-                _buildActionButton(
-                  context,
-                  icon: Icons.fitness_center,
-                  label: 'Exercises',
-                  onPressed: () {
-                    // Navigate to exercises
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const ExercisesScreen()),
+                      MaterialPageRoute(builder: (_) => const ViewHistoryScreen()),
                     );
                   },
                 ),
@@ -196,11 +174,20 @@ class HomeScreen extends StatelessWidget {
                   label: 'Symptom Tracker',
                   onPressed: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const SymptomTrackerScreen()),
+                      MaterialPageRoute(builder: (_) => const SymptomTrackerScreen()),
                     );
                   },
                 ),
-                
+                _buildActionButton(
+                  context,
+                  icon: Icons.person,
+                  label: 'Patient Profile',
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PatientProfileScreen()),
+                    );
+                  },
+                ),
               ],
             ),
           ],
@@ -209,50 +196,9 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryCard(
-    BuildContext context, {
-    required String title,
-    required String status,
-    required String buttonText,
-    required VoidCallback onPressed,
-    required IconData icon,
-    required Color color,
-  }) {
+  Widget _buildAlertCard(BuildContext context, {required String message, required bool isAlert}) {
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        width: (MediaQuery.of(context).size.width - 48) / 2,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 40, color: color),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              status,
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: onPressed,
-              child: Text(buttonText),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAlertCard(BuildContext context,
-      {required String message, required bool isAlert}) {
-    return Card(
-      color: isAlert ? Colors.redAccent : Colors.greenAccent,
+      color: isAlert ? Colors.redAccent : Colors.green,
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(

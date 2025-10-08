@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../services/supabase_auth_service.dart';
 

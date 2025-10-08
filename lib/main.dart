@@ -1,27 +1,18 @@
+import 'package:breath_easy/screens/demo_analysis_screen.dart';
 import 'package:breath_easy/screens/login_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/home_screen.dart';
 import 'features/exercises/presentation/exercises_screen.dart';
-import 'screens/splash_screen.dart';
-import 'screens/speech_analysis_screen.dart';
-import 'screens/breath_analysis_screen.dart';
-import 'screens/analysis_selection_screen.dart';
 import 'screens/monitoring_screen.dart';
+import 'screens/alerts_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-
   await Supabase.initialize(
-    url: 'https://fjxofvxbujivsqyfbldu.supabase.co', //  Supabase API URL from project setup
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqeG9mdnhidWppdnNxeWZibGR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAzNjE1MDgsImV4cCI6MjA2NTkzNzUwOH0.OEkUpvEX2lsB6eJI2NHg6xnFaM34kNi2CBo-61VTjzY', // Replace with your current anon public key from Supabase project
+    url: 'https://fjxofvxbujivsqyfbldu.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqeG9mdnhidWppdnNxeWZibGR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAzNjE1MDgsImV4cCI6MjA2NTkzNzUwOH0.OEkUpvEX2lsB6eJI2NHg6xnFaM34kNi2CBo-61VTjzY',
   );
-  
-   // DEV ONLY: Clear session on app start
-  await Supabase.instance.client.auth.signOut();
-
   runApp(const BreatheasyApp());
 }
 
@@ -39,7 +30,7 @@ class _BreatheasyAppState extends State<BreatheasyApp> {
     const HomeScreen(),
     const MonitoringScreen(),
     const ExercisesScreen(),
-    const PlaceholderWidget(title: 'Alerts'),
+    const AlertsScreen(), // replaced placeholder with dynamic alerts screen
     const PlaceholderWidget(title: 'Profile'),
   ];
 
@@ -57,22 +48,16 @@ class _BreatheasyAppState extends State<BreatheasyApp> {
         primarySwatch: Colors.blue,
       ),
       routes: {
-    '/home': (context) => const DashboardWithNav(),
-    '/login': (context) => const LoginScreen(),
-    // Add more named routes if needed
-  },
-
+        '/home': (context) => const DashboardWithNav(),
+        '/login': (context) => const LoginScreen(),
+        '/demo': (context) => const DemoAnalysisScreen(),
+      },
       home: Builder(
-  builder: (context) {
-    final session = Supabase.instance.client.auth.currentSession;
-    if (session == null) {
-      return const LoginScreen(); // Not logged in → show login
-    } else {
-      return const DashboardWithNav(); // Logged in → show dashboard
-    }
-  },
-),
-
+        builder: (context) {
+          final session = Supabase.instance.client.auth.currentSession;
+          return session == null ? const LoginScreen() : const DashboardWithNav();
+        },
+      ),
     );
   }
 }
@@ -94,7 +79,6 @@ class PlaceholderWidget extends StatelessWidget {
   }
 }
 
-
 class DashboardWithNav extends StatefulWidget {
   const DashboardWithNav({Key? key}) : super(key: key);
 
@@ -109,7 +93,7 @@ class _DashboardWithNavState extends State<DashboardWithNav> {
     const HomeScreen(),
     const MonitoringScreen(),
     const ExercisesScreen(),
-    const PlaceholderWidget(title: 'Alerts'),
+    const AlertsScreen(), // replaced placeholder with dynamic alerts
     const PlaceholderWidget(title: 'Profile'),
   ];
 

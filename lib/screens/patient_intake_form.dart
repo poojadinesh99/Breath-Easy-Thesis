@@ -1,14 +1,11 @@
-
-
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PatientIntakeFormScreen extends StatefulWidget {
   const PatientIntakeFormScreen({super.key});
 
   @override
-  _PatientIntakeFormScreenState createState() =>
-      _PatientIntakeFormScreenState();
+  _PatientIntakeFormScreenState createState() => _PatientIntakeFormScreenState();
 }
 
 class _PatientIntakeFormScreenState extends State<PatientIntakeFormScreen> {
@@ -26,6 +23,8 @@ class _PatientIntakeFormScreenState extends State<PatientIntakeFormScreen> {
   bool _exposedToCovid = false;
   bool _vaccinated = false;
 
+  bool _isSubmitting = false;
+
   void _resetForm() {
     _formKey.currentState?.reset();
     setState(() {
@@ -42,46 +41,49 @@ class _PatientIntakeFormScreenState extends State<PatientIntakeFormScreen> {
   }
 
   Future<void> _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+    if (!_formKey.currentState!.validate()) return;
+    _formKey.currentState!.save();
 
-      try {
-        await FirebaseFirestore.instance.collection('patients').add({
-          'name': _name,
-          'age': int.tryParse(_age) ?? 0,
-          'contactNumber': _contactNumber,
-          'consentGiven': _consentGiven,
-          'hasPreviousConditions': _hasPreviousConditions,
-          'isSmoker': _isSmoker,
-          'hasRespiratoryDiseaseHistory': _hasRespiratoryDiseaseHistory,
-          'exposedToCovid': _exposedToCovid,
-          'vaccinated': _vaccinated,
-          'timestamp': FieldValue.serverTimestamp(),
-        });
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Not logged in')));
+      return;
+    }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Patient Intake Form for $_name submitted successfully',
-            ),
-          ),
-        );
+    setState(() => _isSubmitting = true);
+    try {
+      await Supabase.instance.client.from('patients').insert({
+        'user_id': user.id,
+        'name': _name,
+        'age': int.tryParse(_age) ?? 0,
+        'contact_number': _contactNumber,
+        'consent_given': _consentGiven,
+        'has_previous_conditions': _hasPreviousConditions,
+        'is_smoker': _isSmoker,
+        'has_respiratory_disease_history': _hasRespiratoryDiseaseHistory,
+        'exposed_to_covid': _exposedToCovid,
+        'vaccinated': _vaccinated,
+      });
 
-        _resetForm();
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to submit form: $e'),
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Patient Intake Form for $_name submitted successfully')),
+      );
+      _resetForm();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to submit form: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
   void _navigateToSymptomTracker() {
     if (_name.isEmpty || _age.isEmpty || !_consentGiven) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please complete the patient intake form first.')),
+        const SnackBar(content: Text('Please complete the patient intake form first.')),
       );
       return;
     }
@@ -99,7 +101,7 @@ class _PatientIntakeFormScreenState extends State<PatientIntakeFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Patient Intake Form')),
+      appBar: AppBar(title: const Text('Patient Intake Form')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -107,7 +109,7 @@ class _PatientIntakeFormScreenState extends State<PatientIntakeFormScreen> {
           child: Column(
             children: [
               TextFormField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Full Name',
                   border: OutlineInputBorder(),
                 ),
@@ -121,7 +123,7 @@ class _PatientIntakeFormScreenState extends State<PatientIntakeFormScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Age',
                   border: OutlineInputBorder(),
                 ),
@@ -140,7 +142,7 @@ class _PatientIntakeFormScreenState extends State<PatientIntakeFormScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Contact Number',
                   border: OutlineInputBorder(),
                 ),
@@ -155,65 +157,64 @@ class _PatientIntakeFormScreenState extends State<PatientIntakeFormScreen> {
               ),
               const SizedBox(height: 16),
               CheckboxListTile(
-                title: Text('I consent to treatment'),
+                title: const Text('I consent to treatment'),
                 value: _consentGiven,
                 onChanged: (bool? value) {
-                  setState(() {
-                    _consentGiven = value ?? false;
-                  });
+                  setState(() { _consentGiven = value ?? false; });
                 },
               ),
               CheckboxListTile(
-                title: Text('I have previous medical conditions'),
+                title: const Text('I have previous medical conditions'),
                 value: _hasPreviousConditions,
                 onChanged: (bool? value) {
-                  setState(() {
-                    _hasPreviousConditions = value ?? false;
-                  });
+                  setState(() { _hasPreviousConditions = value ?? false; });
                 },
               ),
               CheckboxListTile(
-                title: Text('I am a smoker'),
+                title: const Text('I am a smoker'),
                 value: _isSmoker,
                 onChanged: (bool? value) {
-                  setState(() {
-                    _isSmoker = value ?? false;
-                  });
+                  setState(() { _isSmoker = value ?? false; });
                 },
               ),
               CheckboxListTile(
-                title: Text('History of respiratory diseases'),
+                title: const Text('History of respiratory diseases'),
                 value: _hasRespiratoryDiseaseHistory,
                 onChanged: (bool? value) {
-                  setState(() {
-                    _hasRespiratoryDiseaseHistory = value ?? false;
-                  });
+                  setState(() { _hasRespiratoryDiseaseHistory = value ?? false; });
                 },
               ),
               CheckboxListTile(
-                title: Text('Exposed to COVID-19'),
+                title: const Text('Exposed to COVID-19'),
                 value: _exposedToCovid,
                 onChanged: (bool? value) {
-                  setState(() {
-                    _exposedToCovid = value ?? false;
-                  });
+                  setState(() { _exposedToCovid = value ?? false; });
                 },
               ),
               CheckboxListTile(
-                title: Text('Vaccinated for COVID-19'),
+                title: const Text('Vaccinated for COVID-19'),
                 value: _vaccinated,
                 onChanged: (bool? value) {
-                  setState(() {
-                    _vaccinated = value ?? false;
-                  });
+                  setState(() { _vaccinated = value ?? false; });
                 },
               ),
               const SizedBox(height: 24),
-              ElevatedButton(onPressed: _submitForm, child: Text('Submit')),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submitForm,
+                  child: _isSubmitting
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Submit'),
+                ),
+              ),
               const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _navigateToSymptomTracker,
-                child: Text('Go to Symptom Tracker'),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _navigateToSymptomTracker,
+                  child: const Text('Go to Symptom Tracker'),
+                ),
               ),
             ],
           ),
