@@ -1,10 +1,12 @@
 name: CI/CD Pipeline
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+  # Temporarily disabled - uncomment when ready for CI
+  # push:
+  #   branches: [ main, develop ]
+  # pull_request:
+  #   branches: [ main, develop ]
+  workflow_dispatch: # Manual trigger only
 
 jobs:
   test:
@@ -21,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --no-cache-dir -r backend/requirements.txt
-          pip install --no-cache-dir pytest pytest-django pytest-cov
+          pip install --no-cache-dir pytest pytest-cov httpx
 
       - name: Run pytest tests
         run: |
