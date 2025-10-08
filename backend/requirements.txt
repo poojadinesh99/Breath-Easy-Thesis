@@ -10,6 +10,7 @@ python-dotenv
 opensmile
 matplotlib
 seaborn
+librosa
 
 openai-whisper
 torch

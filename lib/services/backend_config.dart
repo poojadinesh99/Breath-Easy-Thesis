@@ -9,5 +9,5 @@ class BackendConfig {
   static const String baseProd = 'https://breath-easy-thesis.onrender.com';
 
   // Use local while testing in sim/emulator. Swap to baseProd for phone demo.
-  static String get base => baseLocal;
+  static String get base => baseLocal; // Temporarily using local for testing
 }
