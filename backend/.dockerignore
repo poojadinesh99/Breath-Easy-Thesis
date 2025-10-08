@@ -85,3 +85,9 @@ fastapi_app.py
 extract_spectrogram.py
 train_model.py
 model.pkl
+
+# Ignore archive directories
+archive_librosa/
+archive/
+old/
+deprecated/

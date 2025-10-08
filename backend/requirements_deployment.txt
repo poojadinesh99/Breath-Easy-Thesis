@@ -3,27 +3,28 @@ fastapi==0.104.1
 uvicorn[standard]==0.24.0
 python-multipart==0.0.6
 
-# ML and data processing (lightweight versions)
-scikit-learn==1.3.2
-numpy==1.24.4
-pandas==2.0.3
-joblib==1.3.2
-requests==2.31.0
-python-dotenv==1.0.0
-
-# Audio processing (essential for backend)
+# Essential dependencies for audio processing
 librosa==0.10.1
 soundfile==0.12.1
 numba==0.58.1
 
-# Audio processing (minimal for deployment)
+# ML and data processing (lightweight versions)
+scikit-learn==1.3.2
+numpy==1.24.4
+requests==2.31.0
+python-dotenv==1.0.0
+
+# Audio processing (essential - install first)
 opensmile==2.4.2
 
 # Hugging Face integration
 huggingface_hub==0.17.3
 
-# Environment management
-python-dotenv==1.0.0
+# Optional dependencies
+joblib==1.3.2
+
+# Remove conflicting packages
+# pandas==2.0.3  # Can cause conflicts, exclude for now
 
 # Optional heavy dependencies - only install if really needed
 # torch --index-url https://download.pytorch.org/whl/cpu
