@@ -1,0 +1,87 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.pytest_cache/
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Data and logs
+*.log
+logs/
+data/raw/
+data/features/
+*.wav
+*.mp3
+*.flac
+
+# Model files (will be mounted as volumes)
+*.pkl
+*.h5
+*.joblib
+*.model
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Tests
+tests/
+test_*.py
+*_test.py
+
+# Temporary files
+*.tmp
+*.temp
+
+# Ignore old/deprecated files
+fastapi_app.py
+extract_spectrogram.py
+train_model.py
+model.pkl
