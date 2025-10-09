@@ -11,6 +11,8 @@ opensmile
 matplotlib
 seaborn
 librosa
+huggingface_hub
+supabase
 
 openai-whisper
 torch
