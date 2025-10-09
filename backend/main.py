@@ -86,7 +86,7 @@ async def root():
 # --- Application Startup Event ---
 # The `on_event("startup")` decorator ensures that essential resources, like ML
 # models, are loaded when the application starts, not on the first request. This
-is
+
 # critical for performance, as it avoids a long delay for the first user.
 @app.on_event("startup")
 async def startup_event():
