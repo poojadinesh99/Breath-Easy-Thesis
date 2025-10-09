@@ -202,158 +202,88 @@ class _BreathAnalysisScreenState extends State<BreathAnalysisScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Breath Analysis - Record'),
-        backgroundColor: AppTheme.notWhite,
-        foregroundColor: AppTheme.darkerText,
+        title: const Text('Breath Analysis'),
         elevation: 0,
       ),
-      backgroundColor: AppTheme.notWhite,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Breath-specific category selector
-                    Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Select Breath Pattern',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: BreathCategory.values.map((category) {
-                                return ChoiceChip(
-                                  label: Text(category.displayName),
-                                  selected: _selectedCategory == category,
-                                  onSelected: (selected) {
-                                    if (selected) {
-                                      _onCategorySelected(category);
-                                    }
-                                  },
-                                );
-                              }).toList(),
-                            ),
-                          ],
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Instructions Card
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Recording Instructions',
+                          style: Theme.of(context).textTheme.titleLarge,
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Instructions specific to breath analysis
-                    Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            Text(
-                              'Instructions',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _getBreathInstructions(),
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                          ],
+                        const SizedBox(height: 8),
+                        const Text(
+                          '1. Find a quiet place\n'
+                          '2. Hold your phone 6 inches from your mouth\n'
+                          '3. Press and hold the microphone button\n'
+                          '4. Breathe normally or cough as needed\n'
+                          '5. Release to stop recording',
+                          style: TextStyle(fontSize: 16),
                         ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      icon: Icon(_isRecording ? Icons.stop : Icons.mic),
-                      label: Text(_isRecording ? 'Stop Recording' : 'Start Recording'),
-                      onPressed: _isRecorderInitialized ? _onRecordButtonPressed : null,
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    if (_recordedFilePath != null)
-                      Text(
-                        'Last recording saved at:\n\$_recordedFilePath',
-                        textAlign: TextAlign.center,
-                      ),
-                    const SizedBox(height: 20),
-                    Text(
-                      _statusText,
-                      style: AppTheme.textTheme.bodyMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
-                    // Replace original Expanded prediction/history section:
-                    if (_predictions.isNotEmpty)
-                      Card(
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: PredictionResultWidget(
-                            result: {
-                              'predictions': _predictions,
-                              'label': _topLabel,
-                              'confidence': _topConfidence,
-                              'source': _source,
-                            },
-                            onRetry: _onRetry,
-                            isLoading: _isAnalyzing,
-                          ),
-                        ),
-                      )
-                    else
-                      FutureBuilder<List<Map<String, dynamic>>>(
-                        future: _fetchRecordings(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()));
-                          } else if (snapshot.hasError) {
-                            return Center(child: Text('Error: ${snapshot.error}'));
-                          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                            return const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('No breath analysis recordings found.')));
-                          } else {
-                            final recordings = snapshot.data!;
-                            return SizedBox(
-                              height: 300,
-                              child: ListView.builder(
-                                itemCount: recordings.length,
-                                itemBuilder: (context, index) {
-                                  final recording = recordings[index];
-                                  return ListTile(
-                                    leading: const Icon(Icons.audiotrack),
-                                    title: Text(recording['category'] ?? 'Unknown'),
-                                    subtitle: Text('Recorded at: ${recording['recorded_at']}'),
-                                  );
-                                },
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    const SizedBox(height: 24),
-                  ],
+                  ),
                 ),
-              ),
-            );
-          },
+                const SizedBox(height: 24),
+
+                // Status Text
+                Text(
+                  _statusText,
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+
+                // Record Button
+                Center(
+                  child: GestureDetector(
+                    onTapDown: (_) => _startRecording(),
+                    onTapUp: (_) => _stopRecording(),
+                    onTapCancel: () => _stopRecording(),
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _isRecording ? Colors.red : Theme.of(context).primaryColor,
+                      ),
+                      child: Icon(
+                        _isRecording ? Icons.mic : Icons.mic_none,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Analysis Results
+                if (_isAnalyzing)
+                  const Center(
+                    child: CircularProgressIndicator(),
+                  )
+                else if (_topLabel.isNotEmpty)
+                  PredictionResultWidget(
+                    predictions: _predictions,
+                    topLabel: _topLabel,
+                    confidence: _topConfidence,
+                    source: _source,
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );

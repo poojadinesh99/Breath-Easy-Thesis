@@ -3,10 +3,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
-from app.api.endpoints import router as api_router
-from app.services.model_service import model_service
+# Import core configuration first
 from app.core.config import settings
+
+# Import models
 from app.models.api_models import HealthResponse
+
+# Import services
+from app.services.model_service import model_service
+
+# Import routes last
+from app.api.endpoints import router as api_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
