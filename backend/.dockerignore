@@ -1,0 +1,65 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.pytest_cache/
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Data and Models (if they are large and shouldn't be in git)
+*.pkl
+*.h5
+*.onnx
+# data/ # Commenting out as some data might be needed
+# datasets/
+saved_models/
+model/
+
+# Archived code
+archived_old_backend/
+archive_librosa/
+
+# Logs
+*.log
+
+# Env files
+.env
+.env.*
+!/.env.example
