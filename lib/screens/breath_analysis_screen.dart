@@ -124,15 +124,15 @@ class _BreathAnalysisScreenState extends State<BreathAnalysisScreen> {
             'notes': '',
           });
 
-          // Call unified analysis API
-          final analysisResult = await UnifiedAnalysisService.analyzeUnified(publicUrl);
+          // Call unified analysis API directly with file
+          final analysisResult = await UnifiedAnalysisService.analyzeFile(file);
           setState(() {
             _predictions = Map<String, double>.from(analysisResult['predictions'] ?? {});
             _topLabel = analysisResult['label'] ?? '';
             _topConfidence = (analysisResult['confidence'] as double?) ?? 0.0;
             _source = analysisResult['source'] ?? '';
             _isAnalyzing = false;
-            _statusText = 'Analysis complete';
+            _statusText = 'Analysis complete: $_topLabel (${(_topConfidence * 100).toStringAsFixed(1)}%)';
           });
         } else {
           throw Exception('Failed to upload file to Supabase Storage');

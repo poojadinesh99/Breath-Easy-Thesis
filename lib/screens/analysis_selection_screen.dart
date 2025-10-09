@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'breath_analysis_screen.dart';
+import 'simple_breath_analysis_screen.dart';
 import 'speech_analysis_screen.dart';
 
 class AnalysisSelectionScreen extends StatelessWidget {
@@ -8,7 +8,7 @@ class AnalysisSelectionScreen extends StatelessWidget {
   void _navigateToAnalysis(BuildContext context, String type) {
     if (type == 'breath') {
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const BreathAnalysisScreen()),
+        MaterialPageRoute(builder: (_) => const SimpleBreathAnalysisScreen()),
       );
     } else if (type == 'speech') {
       Navigator.of(context).push(

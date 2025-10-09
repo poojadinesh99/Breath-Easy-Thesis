@@ -1,5 +1,6 @@
 import 'package:breath_easy/screens/demo_analysis_screen.dart';
 import 'package:breath_easy/screens/login_screen.dart';
+import 'package:breath_easy/screens/simple_breath_analysis_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/home_screen.dart';
