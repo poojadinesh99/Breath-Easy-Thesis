@@ -6,10 +6,8 @@ services:
     region: frankfurt
     branch: main
     rootDirectory: backend
-    buildCommand: |
-      cd backend
-      pip install -r requirements_deployment.txt
-    startCommand: cd backend && PYTHONPATH=$PYTHONPATH:/opt/render/project/src/backend uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r backend/requirements_deployment.txt
+    startCommand: cd backend && python -c "import sys; sys.path.append('.')" && uvicorn main:app --host 0.0.0.0 --port $PORT
     autoDeploy: true
     plan: free
     healthCheckPath: /health

@@ -11,13 +11,15 @@ const String _baseUrl = 'http://192.168.178.42:8000';
 // const String _baseUrl = 'https://breath-easy-backend-fresh.onrender.com';
 
 class BackendConfig {
-  // Local dev - Use your computer's IP for physical device testing
-  static String get baseLocal =>
-      Platform.isAndroid ? 'http://127.0.0.1:8001' : 'http://127.0.0.1:8001';
+  // Production backend URL
+  static const String baseProd = 'https://breath-easy-backend-fresh.onrender.com';
 
-  // Deployed (switch for physical device demo)
-  static const String baseProd = 'https://breath-easy-thesis-backend.onrender.com';
+  // Development backend URL (for testing)
+  static String get baseDev =>
+      Platform.isAndroid ? 'http://192.168.178.42:8000' : 'http://localhost:8000';
 
-  // Use local while testing in sim/emulator. Swap to baseProd for phone demo.
-  static String get base => baseLocal; // Using local backend for immediate testing
+  // Always use production URL for release builds
+  static String get base => const bool.fromEnvironment('dart.vm.product')
+      ? baseProd
+      : baseDev;
 }

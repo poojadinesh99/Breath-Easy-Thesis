@@ -26,7 +26,7 @@ class UnifiedAnalysisService {
 
   // New: multipart upload from local file (emulator/device path)
   static Future<Map<String, dynamic>> analyzeFile(File file) async {
-    final String backendUrl = '${BackendConfig.base}/predict/unified';
+    final String backendUrl = '${BackendConfig.base}/api/v1/unified';
     try {
       final form = dio.FormData.fromMap({
         'file': await dio.MultipartFile.fromFile(file.path, filename: 'audio_${DateTime.now().millisecondsSinceEpoch}.wav'),
@@ -61,7 +61,10 @@ class UnifiedAnalysisService {
     try {
       final supabase = Supabase.instance.client;
       final user = supabase.auth.currentUser;
-      if (user == null) return; // skip if not logged in
+      if (user == null) {
+        print('Cannot save to Supabase: No user logged in');
+        return;
+      }
       
       // Ensure all required fields are present
       final analysisData = {
