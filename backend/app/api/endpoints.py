@@ -1,8 +1,8 @@
-
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Depends
 import time
 import os
 import logging
+from starlette.responses import JSONResponse
 
 from app.models.api_models import PredictionResponse, TranscriptionResponse
 from app.services.model_service import model_service
@@ -17,10 +17,46 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+@router.get("/health")
+async def health_check():
+    """
+    Health check endpoint to verify the service is running.
+    """
+    return {"status": "ok", "message": "Breath Easy API is running"}
+
 # Initialize Supabase Service
 # This dependency injection pattern makes the app more testable and modular.
 def get_supabase_service():
     return SupabaseService(url=settings.SUPABASE_URL, key=settings.SUPABASE_KEY)
+
+async def validate_audio_file(file: UploadFile) -> bool:
+    """Validate audio file size and format"""
+    try:
+        # Read first few bytes to verify it's a valid WAV file
+        header = await file.read(44)  # WAV header is 44 bytes
+        await file.seek(0)  # Reset file pointer
+        
+        if len(header) < 44:
+            return False
+            
+        # Check WAV magic numbers
+        if header[:4] != b'RIFF' or header[8:12] != b'WAVE':
+            return False
+            
+        # Get file size
+        file_size = 0
+        while chunk := await file.read(8192):
+            file_size += len(chunk)
+        await file.seek(0)
+        
+        # Minimum 1 second of audio (44100 samples * 2 bytes per sample)
+        if file_size < 88200:
+            return False
+            
+        return True
+    except Exception as e:
+        logger.error(f"File validation error: {str(e)}")
+        return False
 
 @router.post("/unified", response_model=PredictionResponse)
 async def unified_analysis(
@@ -42,84 +78,79 @@ async def unified_analysis(
     
     This structure is clean, modular, and easy to explain in a thesis defense.
     """
-    t0 = time.time()
-    tmp_path = None
-    
     try:
+        if not file and not audio_url:
+            raise HTTPException(status_code=400, detail="No audio file or URL provided")
+
         if file:
-            tmp_path = analysis_service.get_temp_file_from_upload(file)
-            logger.info(f"Audio from upload saved to: {tmp_path}")
-        elif audio_url:
-            tmp_path = analysis_service.get_temp_file_from_url(audio_url)
-            logger.info(f"Audio from URL saved to: {tmp_path}")
-        else:
-            raise HTTPException(status_code=400, detail="No audio provided. Use 'file' or 'audio_url'.")
-
-        # 1. Feature Extraction
-        features = analysis_service.extract_features(tmp_path)
-        
-        # 2. Prediction
-        if model_service.model_type == "sklearn" and not settings.PREFER_HF:
-            result = model_service.predict_local(features)
-        elif model_service.model_type == "huggingface":
-            result = analysis_service.predict_huggingface(features)
-        else:
-            raise HTTPException(status_code=501, detail="No valid model is configured for inference.")
-
-        if "error" in result:
-             raise HTTPException(status_code=500, detail=result["error"])
-
-        # 3. Generate Summary
-        result['text_summary'] = generate_text_summary(result['label'], result['confidence'])
-        result['processing_time'] = time.time() - t0
-
-        # 4. Log to Supabase
-        audio_meta = {"filename": file.filename if file else audio_url}
-        supabase_service.log_analysis(result, audio_meta)
-
-        return PredictionResponse(**result)
-
+            # Validate the audio file
+            if not await validate_audio_file(file):
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "error": "Invalid audio file",
+                        "detail": "Audio file must be a valid WAV file with at least 1 second of audio"
+                    }
+                )
+            
+            # Save file temporarily
+            temp_path = f"/tmp/audio_{int(time.time())}.wav"
+            with open(temp_path, "wb") as buffer:
+                content = await file.read()
+                buffer.write(content)
+                await file.seek(0)
+            
+            try:
+                # Process the audio file
+                predictions = await analysis_service.analyze_audio(temp_path)
+                transcription = await analysis_service.transcribe_audio(temp_path)
+                
+                # Generate summary
+                summary = generate_text_summary(predictions, transcription)
+                
+                # Log to Supabase
+                try:
+                    await supabase_service.log_analysis(predictions, summary)
+                except Exception as e:
+                    logger.error(f"Supabase logging error: {str(e)}")
+                    # Continue even if logging fails
+                
+                return PredictionResponse(
+                    predictions=predictions,
+                    label=max(predictions.items(), key=lambda x: x[1])[0],
+                    confidence=max(predictions.values()),
+                    text_summary=summary
+                )
+            
+            finally:
+                # Clean up temp file
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                    
+        else:  # audio_url provided
+            # Process audio from URL
+            predictions = await analysis_service.analyze_audio_url(audio_url)
+            transcription = await analysis_service.transcribe_audio_url(audio_url)
+            summary = generate_text_summary(predictions, transcription)
+            
+            try:
+                await supabase_service.log_analysis(predictions, summary)
+            except Exception as e:
+                logger.error(f"Supabase logging error: {str(e)}")
+            
+            return PredictionResponse(
+                predictions=predictions,
+                label=max(predictions.items(), key=lambda x: x[1])[0],
+                confidence=max(predictions.values()),
+                text_summary=summary
+            )
+            
     except Exception as e:
-        logger.error(f"🔥 An error occurred during unified analysis: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if tmp_path and os.path.exists(tmp_path):
-            os.remove(tmp_path)
-
-@router.post("/speech", response_model=TranscriptionResponse)
-async def speech_to_text(
-    file: UploadFile = File(None),
-    audio_url: str = Form(None)
-):
-    """
-    Endpoint for audio transcription using Whisper.
-    
-    This showcases the integration of a powerful, pre-trained model for a task
-    that adds significant value to the user experience. It demonstrates an
-    understanding of how to leverage existing AI tools within a custom application.
-    """
-    t0 = time.time()
-    tmp_path = None
-    
-    try:
-        if file:
-            tmp_path = analysis_service.get_temp_file_from_upload(file)
-        elif audio_url:
-            tmp_path = analysis_service.get_temp_file_from_url(audio_url)
-        else:
-            raise HTTPException(status_code=400, detail="No audio provided. Use 'file' or 'audio_url'.")
-
-        transcript = model_service.transcribe_audio(tmp_path)
-        
-        return TranscriptionResponse(
-            transcript=transcript,
-            message=f"You said: {transcript}" if transcript else "No speech was detected.",
-            processing_time=time.time() - t0
+        logger.error(f"Analysis error: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Analysis failed",
+                "detail": str(e)
+            }
         )
-
-    except Exception as e:
-        logger.error(f"🔥 An error occurred during speech analysis: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if tmp_path and os.path.exists(tmp_path):
-            os.remove(tmp_path)

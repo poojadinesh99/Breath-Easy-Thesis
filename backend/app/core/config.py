@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     HF_API_TOKEN: str = os.getenv("HF_TOKEN", "")
     USE_HF: bool = os.getenv("USE_HF", "true").lower() == "true"
     HF_MODEL_ENDPOINT: str = "https://api-inference.huggingface.co/models/PoojaDinesh99/breathe-easy-dualnet"
-    PREFER_HF: bool = os.getenv("PREFER_HF", "true").lower() == "true"
+    PREFER_HF: bool = os.getenv("PREFER_HF", "false").lower() == "true"
 
     # Whisper configuration
     WHISPER_MODEL_SIZE: str = os.getenv("WHISPER_MODEL_SIZE", "base")

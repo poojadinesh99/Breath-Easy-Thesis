@@ -9,7 +9,7 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from fastapi_app_improved import app
+from main import app
 
 client = TestClient(app)
 
@@ -32,7 +32,7 @@ class TestPredictUnifiedEndpoint:
         """Test POST /predict/unified with file upload"""
         with open(sample_audio_file, 'rb') as f:
             r = client.post(
-                "/predict/unified",
+                "/api/v1/unified",
                 files={"file": ("test.wav", f, "audio/wav")}
             )
         assert r.status_code == 200

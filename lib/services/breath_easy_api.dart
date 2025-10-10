@@ -6,7 +6,7 @@ class BreathEasyApi {
   static const String baseUrl = 'https://breath-easy-thesis.onrender.com';
 
   Future<Map<String, dynamic>> predict(File audioFile) async {
-    final uri = Uri.parse('$baseUrl/predict');
+    final uri = Uri.parse('$baseUrl/api/v1/unified');
     final request = http.MultipartRequest('POST', uri)
       ..files.add(await http.MultipartFile.fromPath('file', audioFile.path));
 

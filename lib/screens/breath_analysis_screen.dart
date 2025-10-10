@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:path_provider/path_provider.dart';
@@ -36,125 +35,167 @@ class _BreathAnalysisScreenState extends State<BreathAnalysisScreen> {
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   bool _isRecorderInitialized = false;
   bool _isRecording = false;
-  BreathCategory _selectedCategory = BreathCategory.breathingDeep;
   String? _recordedFilePath;
   String _statusText = 'Press the button to start recording';
 
   Map<String, double> _predictions = {};
   String _topLabel = '';
   double _topConfidence = 0.0;
-  String _source = '';
+  String _textSummary = '';
   bool _isAnalyzing = false;
+  bool _hasRecordingError = false;
 
   @override
   void initState() {
     super.initState();
-    _initRecorder();
+    _initializeRecorder();
   }
 
-  Future<void> _initRecorder() async {
-    await _recorder.openRecorder();
-    await Permission.microphone.request();
-    setState(() {
+  Future<void> _initializeRecorder() async {
+    try {
+      final status = await Permission.microphone.request();
+      if (status != PermissionStatus.granted) {
+        throw Exception('Microphone permission not granted');
+      }
+
+      await _recorder.openRecorder();
+      
+      // Configure recorder for high-quality audio
+      await _recorder.setAudioInfo(
+        AudioInfo(
+          inputDeviceId: '',
+          outputDeviceId: '',
+          focusMode: FocusMode.FOCUS_MODE_AUTO,
+          iosSampleRate: 44100,
+          iosQuality: IosQuality.HIGH,
+          androidAudioSource: AndroidAudioSource.MIC,
+          androidAudioFocusGainType: AndroidAudioFocusGainType.GAIN_TRANSIENT_EXCLUSIVE,
+        ),
+      );
+      
       _isRecorderInitialized = true;
+      setState(() {});
+    } catch (e) {
+      setState(() {
+        _statusText = 'Error initializing recorder: $e';
+        _hasRecordingError = true;
+      });
+    }
+  }
+
+  Future<void> _startRecording() async {
+    if (!_isRecorderInitialized) {
+      setState(() {
+        _statusText = 'Recorder not initialized';
+        _hasRecordingError = true;
+      });
+      return;
+    }
+
+    try {
+      final dir = await getTemporaryDirectory();
+      _recordedFilePath = '${dir.path}/breath_${DateTime.now().millisecondsSinceEpoch}.wav';
+      
+      await _recorder.startRecorder(
+        toFile: _recordedFilePath,
+        codec: Codec.pcm16WAV,
+        sampleRate: 44100,
+        bitRate: 16 * 44100, // 16-bit
+        numChannels: 1, // mono
+      );
+
+      setState(() {
+        _isRecording = true;
+        _statusText = 'Recording... (breathe normally)';
+        _hasRecordingError = false;
+      });
+
+      // Stop recording after 10 seconds
+      await Future.delayed(const Duration(seconds: 10));
+      if (_isRecording) {
+        await _stopRecording();
+      }
+    } catch (e) {
+      setState(() {
+        _statusText = 'Error during recording: $e';
+        _hasRecordingError = true;
+        _isRecording = false;
+      });
+    }
+  }
+
+  Future<void> _stopRecording() async {
+    try {
+      await _recorder.stopRecorder();
+      setState(() {
+        _isRecording = false;
+        _statusText = 'Recording stopped, analyzing...';
+      });
+      await _analyzeRecording();
+    } catch (e) {
+      setState(() {
+        _statusText = 'Error stopping recording: $e';
+        _hasRecordingError = true;
+        _isRecording = false;
+      });
+    }
+  }
+
+  Future<void> _analyzeRecording() async {
+    if (_recordedFilePath == null) {
+      setState(() {
+        _statusText = 'No recording to analyze';
+        _hasRecordingError = true;
+      });
+      return;
+    }
+
+    setState(() {
+      _isAnalyzing = true;
+      _hasRecordingError = false;
     });
+
+    try {
+      final file = File(_recordedFilePath!);
+      if (!await file.exists() || await file.length() < 88200) { // Min 1 second
+        throw Exception('Recording too short or invalid');
+      }
+
+      final result = await UnifiedAnalysisService.analyzeFile(file);
+      
+      setState(() {
+        _predictions = result['predictions'];
+        _topLabel = result['label'];
+        _topConfidence = result['confidence'];
+        _textSummary = result['text_summary'];
+        _statusText = 'Analysis complete';
+        _isAnalyzing = false;
+      });
+    } catch (e) {
+      setState(() {
+        _statusText = 'Analysis failed: $e';
+        _hasRecordingError = true;
+        _isAnalyzing = false;
+      });
+    } finally {
+      // Clean up the recording file
+      try {
+        if (_recordedFilePath != null) {
+          final file = File(_recordedFilePath!);
+          if (await file.exists()) {
+            await file.delete();
+          }
+        }
+      } catch (e) {
+        print('Error cleaning up recording file: $e');
+      }
+    }
   }
 
   @override
   void dispose() {
     _recorder.closeRecorder();
     super.dispose();
-  }
-
-  Future<String> _getFilePath() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    return '${directory.path}/${_selectedCategory.name}_$timestamp.aac';
-  }
-
-  Future<void> _startRecording() async {
-    if (!_isRecorderInitialized) return;
-    final path = await _getFilePath();
-    await _recorder.startRecorder(toFile: path, codec: Codec.aacMP4);
-    setState(() {
-      _isRecording = true;
-      _recordedFilePath = path;
-      _statusText = 'Recording...';
-      _predictions = {};
-      _topLabel = '';
-      _topConfidence = 0.0;
-      _source = '';
-    });
-  }
-
-  Future<void> _stopRecording() async {
-    if (!_isRecorderInitialized) return;
-    await _recorder.stopRecorder();
-    setState(() {
-      _isRecording = false;
-      _statusText = 'Recording stopped. Processing...';
-      _isAnalyzing = true;
-    });
-
-    if (_recordedFilePath != null) {
-      try {
-        final supabase = Supabase.instance.client;
-        final user = supabase.auth.currentUser;
-        if (user == null) {
-          throw Exception("User not logged in");
-        }
-        final file = File(_recordedFilePath!);
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final fileName = '${_selectedCategory.toString()}_$timestamp.aac';
-        final filePath = 'recordings/${user.id}/$fileName';
-
-        final response = await supabase.storage.from('recordings').upload(filePath, file);
-
-        if (response != null && response.isNotEmpty) {
-          final publicUrl = supabase.storage.from('recordings').getPublicUrl(filePath);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Recording uploaded successfully! URL: \$publicUrl')),
-          );
-          // Save recording metadata to recordings table
-          await supabase.from('recordings').insert({
-            'user_id': user.id,
-            'file_url': publicUrl,
-            'category': 'breath_${_selectedCategory.name}',
-            'recorded_at': DateTime.now().toIso8601String(),
-            'notes': '',
-          });
-
-          // Call unified analysis API directly with file
-          final analysisResult = await UnifiedAnalysisService.analyzeFile(file);
-          setState(() {
-            _predictions = Map<String, double>.from(analysisResult['predictions'] ?? {});
-            _topLabel = analysisResult['label'] ?? '';
-            _topConfidence = (analysisResult['confidence'] as double?) ?? 0.0;
-            _source = analysisResult['source'] ?? '';
-            _isAnalyzing = false;
-            _statusText = 'Analysis complete: $_topLabel (${(_topConfidence * 100).toStringAsFixed(1)}%)';
-          });
-        } else {
-          throw Exception('Failed to upload file to Supabase Storage');
-        }
-      } catch (e) {
-        setState(() {
-          _isAnalyzing = false;
-          _statusText = 'Error during analysis: \$e';
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to upload or analyze recording: \$e')),
-        );
-      }
-    } else {
-      setState(() {
-        _isAnalyzing = false;
-        _statusText = 'No recording file found to upload';
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No recording file found to upload')),
-      );
-    }
   }
 
   void _onRecordButtonPressed() {
@@ -165,24 +206,17 @@ class _BreathAnalysisScreenState extends State<BreathAnalysisScreen> {
     }
   }
 
-  void _onCategorySelected(BreathCategory category) {
-    setState(() {
-      _selectedCategory = category;
-    });
-  }
-
   void _onRetry() {
     if (_recordedFilePath != null) {
       setState(() {
         _isAnalyzing = true;
         _statusText = 'Retrying analysis...';
       });
-      UnifiedAnalysisService.analyzeUnified(_recordedFilePath!).then((analysisResult) {
+      UnifiedAnalysisService.analyzeFile(File(_recordedFilePath!)).then((analysisResult) {
         setState(() {
           _predictions = Map<String, double>.from(analysisResult['predictions'] ?? {});
           _topLabel = analysisResult['label'] ?? '';
           _topConfidence = (analysisResult['confidence'] as double?) ?? 0.0;
-          _source = analysisResult['source'] ?? '';
           _isAnalyzing = false;
           _statusText = 'Analysis complete';
         });
@@ -276,10 +310,13 @@ class _BreathAnalysisScreenState extends State<BreathAnalysisScreen> {
                   )
                 else if (_topLabel.isNotEmpty)
                   PredictionResultWidget(
-                    predictions: _predictions,
-                    topLabel: _topLabel,
-                    confidence: _topConfidence,
-                    source: _source,
+                    result: {
+                      'predictions': _predictions,
+                      'label': _topLabel,
+                      'confidence': _topConfidence,
+                      'source': _textSummary,
+                    },
+                    onRetry: _onRetry,
                   ),
               ],
             ),
@@ -290,23 +327,25 @@ class _BreathAnalysisScreenState extends State<BreathAnalysisScreen> {
   }
 
   String _getBreathInstructions() {
-    switch (_selectedCategory) {
-      case BreathCategory.breathingShallow:
+    switch (_topLabel) {
+      case 'breathingShallow':
         return 'Take shallow, quick breaths for 10-15 seconds for accurate analysis.';
-      case BreathCategory.breathingDeep:
+      case 'breathingDeep':
         return 'Take deep breaths: inhale slowly for 4 seconds, hold for 4 seconds, exhale for 4 seconds. Repeat 3-4 times for best results (minimum 10 seconds total).';
-      case BreathCategory.breathingFast:
+      case 'breathingFast':
         return 'Take fast, rapid breaths for 10-15 seconds for accurate analysis.';
-      case BreathCategory.breathingSlow:
+      case 'breathingSlow':
         return 'Take slow, deliberate breaths for 15-20 seconds.';
-      case BreathCategory.coughingHeavy:
+      case 'coughingHeavy':
         return 'Perform heavy coughing 3-5 times over 10 seconds.';
-      case BreathCategory.coughingLight:
+      case 'coughingLight':
         return 'Perform light coughing 3-5 times over 10 seconds.';
-      case BreathCategory.wheezing:
+      case 'wheezing':
         return 'Make wheezing sounds while breathing for 10-15 seconds.';
-      case BreathCategory.stridor:
+      case 'stridor':
         return 'Make stridor sounds while breathing for 10-15 seconds.';
+      default:
+        return '';
     }
   }
 
