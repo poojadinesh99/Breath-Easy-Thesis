@@ -1,44 +1,33 @@
 import sys
 import os
-# Add both the current directory and parent directory to Python path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.insert(0, current_dir)
-sys.path.insert(0, parent_dir)
+from pathlib import Path
+
+# Get the absolute path to the backend directory
+BACKEND_DIR = Path(__file__).resolve().parent
+APP_DIR = BACKEND_DIR / 'app'
+
+# Add paths to Python path
+sys.path.extend([str(BACKEND_DIR), str(APP_DIR)])
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
-# Import core configuration first
+# Local imports
 from app.core.config import settings
-
-# Import models
 from app.models.api_models import HealthResponse
-
-# Import services
 from app.services.model_service import model_service
-
-# Import routes last
 from app.api.endpoints import router as api_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# --- Thesis-Ready Application Structure ---
-# This main.py file acts as the entry point to the application.
-# By adopting a modular structure (api, services, models, core), the project
-# becomes significantly cleaner, more maintainable, and easier to present in a
-# thesis defense. It separates concerns, which is a fundamental principle of
-# good software engineering.
-
 app = FastAPI(
     title="Breathe Easy: AI-Powered Respiratory Analysis",
     description="A thesis-grade FastAPI backend for analyzing respiratory audio using machine learning. "
                 "This API provides endpoints for disease classification and speech transcription.",
     version="2.0.0",
-    # Adding contact and license info is good practice for a public-facing or academic project.
     contact={
         "name": "Thesis Project - AI for Healthcare",
         "url": "http://example.com/project-page",
@@ -50,29 +39,18 @@ app = FastAPI(
     },
 )
 
-# --- CORS Middleware ---
-# Cross-Origin Resource Sharing (CORS) is essential for allowing the frontend
-# (likely a web or mobile app) to communicate with this backend. Using a wildcard
-# is acceptable for development, but for production, it's better to restrict it
-# to the specific domain of the frontend application.
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, change to: ["https://your-frontend-domain.com"]
+    allow_origins=["*"],  # For development - update for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- API Router Inclusion ---
-# The main application includes the router from the `api` module. This keeps the
-# main file clean and delegates all routing logic to the `endpoints.py` file.
+# Include API routes
 app.include_router(api_router, prefix="/api/v1")
 
-# --- Health Check Endpoint ---
-# A /health endpoint is a standard practice for any deployed service. It allows
-# automated systems (like Render's health checks) to verify that the application
-# is running and properly configured. This is a crucial element for ensuring
-# reliable deployment.
 @app.get("/health", response_model=HealthResponse, tags=["System"])
 def health_check():
     """
@@ -88,8 +66,6 @@ def health_check():
         whisper_model_size=settings.WHISPER_MODEL_SIZE,
     )
 
-# --- Root Endpoint ---
-# A simple root endpoint to confirm the API is up and provides basic info.
 @app.get("/", tags=["System"])
 async def root():
     """
@@ -97,19 +73,6 @@ async def root():
     """
     return {"message": "Welcome to the Breathe Easy API. See /docs for details."}
 
-# --- Application Startup Event ---
-# The `on_event("startup")` decorator ensures that essential resources, like ML
-# models, are loaded when the application starts, not on the first request.
-# This is critical for performance, as it avoids a long delay for the first user.
-@app.on_event("startup")
-async def startup_event():
-    logger.info("🚀 Application starting up...")
-    # The model_service is already initialized at import time, so this is just a log point.
-    # If any other async setup is needed, it would go here.
-    logger.info("✅ Application startup complete.")
-
 if __name__ == "__main__":
     import uvicorn
-    # This allows running the app directly for local development.
-    # The host "0.0.0.0" makes it accessible from other devices on the same network.
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
