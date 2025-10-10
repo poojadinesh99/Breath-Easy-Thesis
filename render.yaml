@@ -6,12 +6,8 @@ services:
     region: frankfurt
     branch: main
     rootDirectory: backend
-    buildCommand: |
-      cd backend
-      pip install -r requirements_deployment.txt
-    startCommand: |
-      cd backend
-      uvicorn fastapi_app_improved:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r requirements_deployment.txt
+    startCommand: uvicorn fastapi_app_improved:app --host 0.0.0.0 --port $PORT
     autoDeploy: true
     plan: free
     healthCheckPath: /health
