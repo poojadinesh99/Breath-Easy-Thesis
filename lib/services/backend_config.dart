@@ -1,14 +1,7 @@
 import 'dart:io' show Platform;
 
-// Use this for testing with a physical device on the same Wi-Fi network.
-// Replace "YOUR_COMPUTER_IP" with the actual IP address of your computer.
-const String _baseUrl = 'http://192.168.178.42:8000';
-
-// Use this for testing with the Android Emulator.
-// const String _baseUrl = 'http://10.0.2.2:8000';
-
-// Use this for the deployed backend on Render.
-// const String _baseUrl = 'https://breath-easy-backend-fresh.onrender.com';
+// Production backend URL - used by default
+const String _baseUrl = 'https://breath-easy-backend-fresh.onrender.com';
 
 class BackendConfig {
   // Production backend URL
@@ -18,8 +11,12 @@ class BackendConfig {
   static String get baseDev =>
       Platform.isAndroid ? 'http://192.168.178.42:8000' : 'http://localhost:8000';
 
-  // Always use production URL for release builds
-  static String get base => const bool.fromEnvironment('dart.vm.product')
-      ? baseProd
-      : baseDev;
+  // Use production by default, can be overridden for development
+  static String get baseUrl => baseProd;
+
+  // API endpoints
+  static String get healthCheck => '$baseUrl/health';
+  static String get unifiedAnalysis => '$baseUrl/api/v1/unified';
+  static String get transcription => '$baseUrl/api/v1/transcribe';
+  // Add any additional endpoints here
 }
