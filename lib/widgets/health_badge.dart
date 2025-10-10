@@ -6,7 +6,7 @@ class HealthBadge extends StatelessWidget {
   const HealthBadge({super.key});
 
   Future<Map<String, dynamic>> _fetch() async {
-    final res = await Dio().get('${BackendConfig.base}/health');
+    final res = await Dio().get('${BackendConfig.baseUrl}/health');
     return Map<String, dynamic>.from(res.data as Map);
   }
 

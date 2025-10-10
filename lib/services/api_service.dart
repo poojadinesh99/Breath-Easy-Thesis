@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'backend_config.dart';
 
 class ApiService {
-  static String get baseUrl => BackendConfig.base;
+  static String get baseUrl => BackendConfig.baseUrl;
 
   /// Analyzes an audio file by sending it to the backend API
   static Future<Map<String, dynamic>> analyzeAudioFile(File audioFile) async {

@@ -11,8 +11,8 @@ class BackendConfig {
   static String get baseDev =>
       Platform.isAndroid ? 'http://192.168.178.42:8000' : 'http://localhost:8000';
 
-  // Use production by default, can be overridden for development
-  static String get baseUrl => baseProd;
+  // Use development for testing on device
+  static String get baseUrl => baseDev;
 
   // API endpoints
   static String get healthCheck => '$baseUrl/health';
