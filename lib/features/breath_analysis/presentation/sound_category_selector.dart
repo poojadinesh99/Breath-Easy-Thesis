@@ -8,10 +8,10 @@ class SoundCategorySelector extends StatelessWidget {
   final OnCategorySelected onCategorySelected;
 
   const SoundCategorySelector({
-    Key? key,
+    super.key,
     required this.selectedCategory,
     required this.onCategorySelected,
-  }) : super(key: key);
+  });
 
   String _categoryToString(SoundCategory category) {
     switch (category) {

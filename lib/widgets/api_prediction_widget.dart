@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 class ApiPredictionWidget extends StatefulWidget {
   final String apiUrl;
 
-  const ApiPredictionWidget({Key? key, required this.apiUrl}) : super(key: key);
+  const ApiPredictionWidget({super.key, required this.apiUrl});
 
   @override
   _ApiPredictionWidgetState createState() => _ApiPredictionWidgetState();

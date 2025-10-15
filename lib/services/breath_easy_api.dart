@@ -3,12 +3,13 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class BreathEasyApi {
-  static const String baseUrl = 'https://breath-easy-thesis.onrender.com';
+  static const String baseUrl = 'http://localhost:8000';
 
-  Future<Map<String, dynamic>> predict(File audioFile) async {
+  Future<Map<String, dynamic>> predict(File audioFile, {String taskType = 'general'}) async {
     final uri = Uri.parse('$baseUrl/api/v1/unified');
     final request = http.MultipartRequest('POST', uri)
-      ..files.add(await http.MultipartFile.fromPath('file', audioFile.path));
+      ..files.add(await http.MultipartFile.fromPath('file', audioFile.path))
+      ..fields['task_type'] = taskType;
 
     final response = await request.send();
     final responseBody = await response.stream.bytesToString();

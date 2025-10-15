@@ -3,7 +3,7 @@ import '../services/demo_analysis_service.dart';
 import '../widgets/prediction_result_widget.dart';
 
 class DemoAnalysisScreen extends StatefulWidget {
-  const DemoAnalysisScreen({Key? key}) : super(key: key);
+  const DemoAnalysisScreen({super.key});
 
   @override
   State<DemoAnalysisScreen> createState() => _DemoAnalysisScreenState();

@@ -7,7 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../services/api_service.dart';
 
 class MedicalAnalysisScreen extends StatefulWidget {
-  const MedicalAnalysisScreen({Key? key}) : super(key: key);
+  const MedicalAnalysisScreen({super.key});
 
   @override
   State<MedicalAnalysisScreen> createState() => _MedicalAnalysisScreenState();
