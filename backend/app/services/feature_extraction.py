@@ -6,28 +6,36 @@ import os
 import logging
 import numpy as np
 from typing import Dict, Any
-import opensmile
-from transformers import pipeline
 import librosa
 
 logger = logging.getLogger(__name__)
 
-# Initialize feature extractors
-smile = opensmile.Smile(
-    feature_set=opensmile.FeatureSet.ComParE_2016,
-    feature_level=opensmile.FeatureLevel.Functionals,
-)
+# Initialize feature extractors with error handling
+smile = None
+whisper = None
 
 try:
-    # Initialize Whisper for speech analysis (fallback to small model if needed)
+    import opensmile
+    smile = opensmile.Smile(
+        feature_set=opensmile.FeatureSet.ComParE_2016,
+        feature_level=opensmile.FeatureLevel.Functionals,
+    )
+    logger.info("✓ OpenSMILE initialized successfully")
+except Exception as e:
+    logger.warning(f"Failed to load OpenSMILE: {e}")
+
+try:
+    from transformers import pipeline
+    # Initialize Whisper for speech analysis (use tiny model for HF Spaces)
     whisper = pipeline(
         "automatic-speech-recognition",
-        model="openai/whisper-small",
+        model="openai/whisper-tiny",
         chunk_length_s=30,
+        ignore_warning=True
     )
+    logger.info("✓ Whisper model initialized successfully")
 except Exception as e:
     logger.warning(f"Failed to load Whisper model: {e}")
-    whisper = None
 
 def extract_features(file_path: str, task_type: str = "breath") -> Dict[str, Any]:
     """
