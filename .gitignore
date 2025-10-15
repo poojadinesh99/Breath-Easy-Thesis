@@ -47,6 +47,13 @@ __pycache__/
 *.so
 .Python
 
+# Allow specific model files
+!backend/ml/models/
+!backend/ml/models/*.pkl
+!backend/ml/models/*.model
+!backend/ml/models/*.bin
+!backend/ml/models/label_map.json
+
 # Virtual environments
 .venv/
 venv/
@@ -81,7 +88,9 @@ coverage.xml
 backend/saved_models/
 backend/model/*.pkl
 backend/model/*.joblib
-**/models/
+# Exclude models directories but NOT our specific backend/ml/models
+archived_old_backend/**/models/
+data/**/models/
 **/checkpoints/
 **/runs/
 **/artifacts/
