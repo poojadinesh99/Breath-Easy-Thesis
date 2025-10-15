@@ -8,7 +8,7 @@ import '../data/models/sound_sample.dart';
 import 'sound_category_selector.dart';
 
 class RecordScreen extends StatefulWidget {
-  const RecordScreen({Key? key}) : super(key: key);
+  const RecordScreen({super.key});
 
   @override
   State<RecordScreen> createState() => _RecordScreenState();

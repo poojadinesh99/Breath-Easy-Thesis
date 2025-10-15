@@ -10,7 +10,7 @@ import '../../breath_analysis/data/models/sound_sample.dart';
 import '../data/coswara_task.dart';
 
 class ExercisesScreen extends StatefulWidget {
-  const ExercisesScreen({Key? key}) : super(key: key);
+  const ExercisesScreen({super.key});
 
   @override
   State<ExercisesScreen> createState() => _ExercisesScreenState();

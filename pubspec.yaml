@@ -1,5 +1,5 @@
 name: breath_easy
-description: "A new Flutter project."
+description: "A mobile application for respiratory health analysis."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -37,20 +37,23 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   # Added dependencies for breath analysis features
-  sensors_plus: ^6.1.1
-  flutter_sound: ^9.28.0
-  permission_handler: ^12.0.0+1
-  fl_chart: ^1.0.0
-  charts_flutter: ^0.12.0
+  record: ^6.1.2
   path_provider: ^2.1.5
-  supabase_flutter: ^2.9.1
+  permission_handler: ^12.0.0+1
+  fl_chart: ^0.66.0
   uuid: ^4.5.1
   dio: ^5.1.2
+  http: ^1.5.0
   timezone: ^0.10.1
   flutter_local_notifications: ^19.4.2
+  shared_preferences: ^2.2.2
   share_plus: ^12.0.0
   percent_indicator: ^4.2.5
-  http: ^1.5.0
+  flutter_sound_platform_interface: ^9.28.0
+  flutter_svg: ^2.2.1
+  supabase_flutter: ^2.10.3
+  flutter_sound: ^9.28.0
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:

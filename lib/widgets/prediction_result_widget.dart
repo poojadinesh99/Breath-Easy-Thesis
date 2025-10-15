@@ -6,11 +6,11 @@ class PredictionResultWidget extends StatelessWidget {
   final bool isLoading;
 
   const PredictionResultWidget({
-    Key? key,
+    super.key,
     required this.result,
     required this.onRetry,
     this.isLoading = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

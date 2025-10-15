@@ -10,7 +10,7 @@ import '../services/unified_analysis_service.dart';
 import '../services/history_service.dart';
 
 class MonitoringScreen extends StatefulWidget {
-  const MonitoringScreen({Key? key}) : super(key: key);
+  const MonitoringScreen({super.key});
 
   @override
   State<MonitoringScreen> createState() => _MonitoringScreenState();
@@ -154,8 +154,8 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
       for (int i = 1; i <= 12; i++) {
         if (!_isRecording) break;
         setState(() {
-          _breathStatus = 'Recording... ${i}/12 seconds';
-          _speechStatus = 'Recording... ${i}/12 seconds';
+          _breathStatus = 'Recording... $i/12 seconds';
+          _speechStatus = 'Recording... $i/12 seconds';
         });
         await Future.delayed(const Duration(seconds: 1));
       }
@@ -173,7 +173,7 @@ class _MonitoringScreenState extends State<MonitoringScreen> {
       }
 
       final fileSize = await file.length();
-      print('Recording completed: $recordedPath (${fileSize} bytes)');
+      print('Recording completed: $recordedPath ($fileSize bytes)');
 
       if (fileSize < 1000) {
         throw Exception('Recording too short or empty');

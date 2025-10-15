@@ -37,7 +37,7 @@ class ExerciseItem {
 
   factory ExerciseItem.fromCsvRow(List<String> row) {
     return ExerciseItem(
-      id: row.length > 0 ? row[0] : '',
+      id: row.isNotEmpty ? row[0] : '',
       module: row.length > 1 ? row[1] : '',
       category: row.length > 2 ? row[2] : '',
       name: row.length > 3 ? row[3] : '',

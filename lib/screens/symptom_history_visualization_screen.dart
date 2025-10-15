@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:charts_flutter/flutter.dart' as charts;
+import 'package:fl_chart/fl_chart.dart';
 
 class SymptomHistoryVisualizationScreen extends StatefulWidget {
   const SymptomHistoryVisualizationScreen({super.key});
@@ -13,7 +13,16 @@ class _SymptomHistoryVisualizationScreenState extends State<SymptomHistoryVisual
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _rows = [];
-  List<charts.Series<SymptomData, DateTime>> _series = [];
+  Map<String, List<FlSpot>> _symptomData = {};
+  final _colors = [
+    Colors.blue,
+    Colors.red,
+    Colors.green,
+    Colors.orange,
+    Colors.purple,
+    Colors.teal,
+    Colors.pink,
+  ];
 
   @override
   void initState() {
@@ -36,7 +45,7 @@ class _SymptomHistoryVisualizationScreenState extends State<SymptomHistoryVisual
           .order('logged_at', ascending: true)
           .limit(1000);
       _rows = List<Map<String,dynamic>>.from(data);
-      _buildSeries();
+      _processData();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -44,62 +53,176 @@ class _SymptomHistoryVisualizationScreenState extends State<SymptomHistoryVisual
     }
   }
 
-  void _buildSeries() {
-    Map<String, List<SymptomData>> grouped = {};
+  void _processData() {
+    _symptomData.clear();
+    final now = DateTime.now();
+    
+    // Group data by symptom type
     for (final row in _rows) {
       final symptom = (row['symptom_type'] ?? 'Unknown') as String;
-      final severity = (row['severity'] ?? 0) as int;
-      final loggedAt = row['logged_at'];
-      DateTime? ts;
-      if (loggedAt is String) ts = DateTime.tryParse(loggedAt);
-      if (ts == null) continue;
-      grouped.putIfAbsent(symptom, () => []);
-      grouped[symptom]!.add(SymptomData(ts, severity.toDouble()));
+      final severity = (row['severity'] as num).toDouble();
+      final date = DateTime.parse(row['logged_at'] as String);
+      
+      // Convert to days from now for x-axis
+      final days = now.difference(date).inDays.toDouble();
+      
+      _symptomData.putIfAbsent(symptom, () => []);
+      _symptomData[symptom]!.add(FlSpot(days, severity));
     }
-    _series = grouped.entries.map((e) {
-      return charts.Series<SymptomData, DateTime>(
-        id: e.key,
-        data: e.value,
-        domainFn: (SymptomData d, _) => d.date,
-        measureFn: (SymptomData d, _) => d.intensity,
-        colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
-      );
-    }).toList();
+    
+    // Sort points by x value for each symptom
+    for (final points in _symptomData.values) {
+      points.sort((a, b) => a.x.compareTo(b.x));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Symptom History Visualization'), actions: [
-        IconButton(onPressed: _load, icon: const Icon(Icons.refresh))
-      ]),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? _buildError()
-              : _series.isEmpty
-                  ? _buildEmpty()
-                  : Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: charts.TimeSeriesChart(
-                        _series,
-                        animate: true,
-                        dateTimeFactory: const charts.LocalDateTimeFactory(),
-                        behaviors: [
-                          charts.SeriesLegend(position: charts.BehaviorPosition.bottom, horizontalFirst: false, desiredMaxColumns: 2),
-                          charts.PanAndZoomBehavior(),
-                        ],
-                      ),
-                    ),
+      appBar: AppBar(
+        title: const Text('Symptom History'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _load,
+          ),
+        ],
+      ),
+      body: _buildBody(),
     );
   }
 
-  Widget _buildError() => Center(child: Text(_error!, style: const TextStyle(color: Colors.redAccent)));
-  Widget _buildEmpty() => const Center(child: Text('No symptom data available.'));
-}
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Error: $_error',
+              style: const TextStyle(color: Colors.red),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _load,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
 
-class SymptomData {
-  final DateTime date;
-  final double intensity;
-  SymptomData(this.date, this.intensity);
+    if (_rows.isEmpty) {
+      return const Center(
+        child: Text('No symptom history recorded yet.'),
+      );
+    }
+
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: 400,
+              child: LineChart(
+                LineChartData(
+                  lineBarsData: _buildLineBarsData(),
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      axisNameWidget: const Text('Severity'),
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: 1,
+                        reservedSize: 40,
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      axisNameWidget: const Text('Days Ago'),
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: 7,
+                        reservedSize: 30,
+                      ),
+                    ),
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: true,
+                    horizontalInterval: 1,
+                    verticalInterval: 7,
+                  ),
+                  borderData: FlBorderData(
+                    show: true,
+                    border: Border.all(color: const Color(0xff37434d)),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildLegend(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<LineChartBarData> _buildLineBarsData() {
+    final List<LineChartBarData> lines = [];
+    var colorIndex = 0;
+
+    for (final entry in _symptomData.entries) {
+      final color = _colors[colorIndex % _colors.length];
+      lines.add(
+        LineChartBarData(
+          spots: entry.value,
+          isCurved: true,
+          color: color,
+          barWidth: 2,
+          isStrokeCapRound: true,
+          dotData: FlDotData(show: true),
+          belowBarData: BarAreaData(show: false),
+        ),
+      );
+      colorIndex++;
+    }
+
+    return lines;
+  }
+
+  Widget _buildLegend() {
+    return Wrap(
+      spacing: 16,
+      runSpacing: 8,
+      children: _symptomData.keys.map((symptom) {
+        final colorIndex = _symptomData.keys.toList().indexOf(symptom);
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                color: _colors[colorIndex % _colors.length],
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(symptom),
+          ],
+        );
+      }).toList(),
+    );
+  }
 }

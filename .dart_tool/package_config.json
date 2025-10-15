@@ -3,9 +3,9 @@
   "packages": [
     {
       "name": "app_links",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/app_links-6.4.0",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/app_links-6.4.1",
       "packageUri": "lib/",
-      "languageVersion": "3.3"
+      "languageVersion": "3.5"
     },
     {
       "name": "app_links_linux",
@@ -50,18 +50,6 @@
       "languageVersion": "3.4"
     },
     {
-      "name": "charts_common",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/charts_common-0.12.0",
-      "packageUri": "lib/",
-      "languageVersion": "2.12"
-    },
-    {
-      "name": "charts_flutter",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/charts_flutter-0.12.0",
-      "packageUri": "lib/",
-      "languageVersion": "2.12"
-    },
-    {
       "name": "clock",
       "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/clock-1.1.2",
       "packageUri": "lib/",
@@ -99,7 +87,7 @@
     },
     {
       "name": "dio",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/dio-5.8.0+1",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/dio-5.9.0",
       "packageUri": "lib/",
       "languageVersion": "2.18"
     },
@@ -141,9 +129,9 @@
     },
     {
       "name": "fl_chart",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/fl_chart-1.0.0",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/fl_chart-0.66.2",
       "packageUri": "lib/",
-      "languageVersion": "3.6"
+      "languageVersion": "3.2"
     },
     {
       "name": "flutter",
@@ -200,6 +188,12 @@
       "languageVersion": "3.3"
     },
     {
+      "name": "flutter_svg",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/flutter_svg-2.2.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
       "name": "flutter_test",
       "rootUri": "file:///Users/themysticbrew/flutter/packages/flutter_test",
       "packageUri": "lib/",
@@ -213,13 +207,13 @@
     },
     {
       "name": "functions_client",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/functions_client-2.4.3",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/functions_client-2.5.0",
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
     {
       "name": "gotrue",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/gotrue-2.13.0",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/gotrue-2.16.0",
       "packageUri": "lib/",
       "languageVersion": "3.3"
     },
@@ -243,9 +237,9 @@
     },
     {
       "name": "intl",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/intl-0.17.0",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/intl-0.20.2",
       "packageUri": "lib/",
-      "languageVersion": "2.12"
+      "languageVersion": "3.3"
     },
     {
       "name": "jwt_decode",
@@ -279,7 +273,7 @@
     },
     {
       "name": "logger",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/logger-2.5.0",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/logger-2.6.2",
       "packageUri": "lib/",
       "languageVersion": "2.17"
     },
@@ -320,6 +314,12 @@
       "languageVersion": "3.4"
     },
     {
+      "name": "path_parsing",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/path_parsing-1.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
+    },
+    {
       "name": "path_provider",
       "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/path_provider-2.1.5",
       "packageUri": "lib/",
@@ -327,15 +327,15 @@
     },
     {
       "name": "path_provider_android",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/path_provider_android-2.2.17",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/path_provider_android-2.2.19",
       "packageUri": "lib/",
-      "languageVersion": "3.6"
+      "languageVersion": "3.7"
     },
     {
       "name": "path_provider_foundation",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.1",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.2",
       "packageUri": "lib/",
-      "languageVersion": "3.3"
+      "languageVersion": "3.7"
     },
     {
       "name": "path_provider_linux",
@@ -363,7 +363,7 @@
     },
     {
       "name": "permission_handler",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/permission_handler-12.0.0+1",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/permission_handler-12.0.1",
       "packageUri": "lib/",
       "languageVersion": "3.5"
     },
@@ -417,15 +417,63 @@
     },
     {
       "name": "postgrest",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/postgrest-2.4.2",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/postgrest-2.5.0",
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
     {
       "name": "realtime_client",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/realtime_client-2.5.1",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/realtime_client-2.6.0",
       "packageUri": "lib/",
       "languageVersion": "3.0"
+    },
+    {
+      "name": "record",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/record-6.1.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
+      "name": "record_android",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/record_android-1.4.3",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
+      "name": "record_ios",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/record_ios-1.1.4",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
+      "name": "record_linux",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/record_linux-1.2.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
+      "name": "record_macos",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/record_macos-1.1.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
+      "name": "record_platform_interface",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/record_platform_interface-1.4.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
+      "name": "record_web",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/record_web-1.2.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
+      "name": "record_windows",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/record_windows-1.0.7",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
     },
     {
       "name": "retry",
@@ -438,18 +486,6 @@
       "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/rxdart-0.28.0",
       "packageUri": "lib/",
       "languageVersion": "2.12"
-    },
-    {
-      "name": "sensors_plus",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/sensors_plus-6.1.1",
-      "packageUri": "lib/",
-      "languageVersion": "3.3"
-    },
-    {
-      "name": "sensors_plus_platform_interface",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/sensors_plus_platform_interface-2.0.1",
-      "packageUri": "lib/",
-      "languageVersion": "2.18"
     },
     {
       "name": "share_plus",
@@ -471,9 +507,9 @@
     },
     {
       "name": "shared_preferences_android",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.10",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.15",
       "packageUri": "lib/",
-      "languageVersion": "3.6"
+      "languageVersion": "3.9"
     },
     {
       "name": "shared_preferences_foundation",
@@ -531,7 +567,7 @@
     },
     {
       "name": "storage_client",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/storage_client-2.4.0",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/storage_client-2.4.1",
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
@@ -549,21 +585,21 @@
     },
     {
       "name": "supabase",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/supabase-2.8.0",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/supabase-2.10.0",
       "packageUri": "lib/",
       "languageVersion": "3.3"
     },
     {
       "name": "supabase_flutter",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/supabase_flutter-2.9.1",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/supabase_flutter-2.10.3",
       "packageUri": "lib/",
       "languageVersion": "3.3"
     },
     {
       "name": "synchronized",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/synchronized-3.3.1",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/synchronized-3.4.0",
       "packageUri": "lib/",
-      "languageVersion": "3.7"
+      "languageVersion": "3.8"
     },
     {
       "name": "term_glyph",
@@ -591,21 +627,21 @@
     },
     {
       "name": "url_launcher",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/url_launcher-6.3.1",
-      "packageUri": "lib/",
-      "languageVersion": "3.3"
-    },
-    {
-      "name": "url_launcher_android",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.16",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/url_launcher-6.3.2",
       "packageUri": "lib/",
       "languageVersion": "3.6"
     },
     {
-      "name": "url_launcher_ios",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.3",
+      "name": "url_launcher_android",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.24",
       "packageUri": "lib/",
-      "languageVersion": "3.4"
+      "languageVersion": "3.9"
+    },
+    {
+      "name": "url_launcher_ios",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/url_launcher_ios-6.3.4",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
     },
     {
       "name": "url_launcher_linux",
@@ -615,9 +651,9 @@
     },
     {
       "name": "url_launcher_macos",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.2",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/url_launcher_macos-3.2.3",
       "packageUri": "lib/",
-      "languageVersion": "3.3"
+      "languageVersion": "3.7"
     },
     {
       "name": "url_launcher_platform_interface",
@@ -644,6 +680,24 @@
       "languageVersion": "3.0"
     },
     {
+      "name": "vector_graphics",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/vector_graphics-1.1.19",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
+    },
+    {
+      "name": "vector_graphics_codec",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/vector_graphics_codec-1.1.13",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "vector_graphics_compiler",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/vector_graphics_compiler-1.1.19",
+      "packageUri": "lib/",
+      "languageVersion": "3.7"
+    },
+    {
       "name": "vector_math",
       "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/vector_math-2.2.0",
       "packageUri": "lib/",
@@ -651,9 +705,9 @@
     },
     {
       "name": "vm_service",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/vm_service-15.0.0",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/vm_service-15.0.2",
       "packageUri": "lib/",
-      "languageVersion": "3.3"
+      "languageVersion": "3.5"
     },
     {
       "name": "web",
@@ -675,7 +729,7 @@
     },
     {
       "name": "win32",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/win32-5.14.0",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/win32-5.15.0",
       "packageUri": "lib/",
       "languageVersion": "3.8"
     },

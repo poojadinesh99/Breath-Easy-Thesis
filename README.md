@@ -1,8 +1,8 @@
-# Breath Easy Flutter App
+# Breath Easy Thesis — Android App (Flutter)
 
-## Overview
+The Breath Easy app analyzes respiratory health from breath and speech audio, provides real‑time feedback, tracks symptoms, and maintains a longitudinal health dashboard. It combines on‑device recording with remote model inference (Hugging Face Space) and persists user data in Supabase (auth, DB, storage).
 
-This Flutter app isource venv/bin/activates designed to help users analyze their breathing patterns and track symptoms. The backend services are powered by Supabase, which provides authentication, database, and storage functionalities.
+This README is provides  documentation on : architecture, data flow, models, endpoints, setup, and operations to reproduce results and run demos.
 
 ---
 
@@ -111,13 +111,34 @@ Repeat similar policies for other tables.
 
 ## Running the App
 
-1. Ensure your Supabase backend is set up and running.
-2. Configure your Flutter app with Supabase credentials.
-3. Run the app using:
+Prerequisites
+- Flutter SDK, Android SDK, device/emulator
+- Supabase project (URL + anon key)
 
+Environment variables (dart‑defines)
+- `BASE_URL`: defaults to HF Space `https://your-hf-space.hf.space`
+- `SUPABASE_URL`: your Supabase project URL
+- `SUPABASE_ANON_KEY`: your Supabase anon key
+
+Quick start (Android)
 ```bash
-flutter run
+flutter pub get
+flutter run \
+  --dart-define=BASE_URL=https://your-hf-space.hf.space \
+  --dart-define=SUPABASE_URL=https://your-project.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=your-anon-key
 ```
+
+Local backend (optional)
+```bash
+flutter run \
+  --dart-define=BASE_URL=http://192.168.0.100:8000 \
+  --dart-define=SUPABASE_URL=https://your-project.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=your-anon-key
+```
+
+Endpoint resolution
+- Client first tries `/api/v1/unified`, then `/predict/unified` automatically.
 
 ---
 
@@ -166,6 +187,10 @@ The Breath Easy Flutter app provides a user interface for breathing analysis, sy
 
 ### Usage Notes
 
+API Contract (normalized in app)
+- Request: multipart `file` (16 kHz mono WAV), optional `inference`, optional `audio_url`
+- Response: `predictions`, `predicted_label`, `confidence`, `source`, `processing_time`, `text_summary`, `audio_metadata`
+
 - Users must be authenticated to upload recordings and log exercises.
 - Audio files are stored in the Supabase Storage bucket named `recordings`.
 - Exercise metadata including recording URLs are stored in the `exercises` table.
@@ -183,6 +208,26 @@ The Breath Easy Flutter app provides a user interface for breathing analysis, sy
 This documentation complements the backend setup instructions and provides guidance for working with the Flutter app.
 
 ---
+
+## Research & Design Notes
+
+Labels (examples)
+- Diseases: asthma, copd, pneumonia, bronchitis, covid19, influenza, tuberculosis, pulmonary_fibrosis, lung_cancer_screen, pertussis, bronchiolitis, rsv, pleural_effusion, ards
+- Symptoms: cough, wheeze, crackles, stridor, dyspnea, chest_tightness, fatigue, fever, sore_throat, runny_nose, hoarseness
+
+Audio & Features
+- Capture: 16 kHz mono WAV
+- Features: OpenSMILE eGeMAPS/ComParE, mel‑spectrograms
+- Models: remote DL on HF Space; optional TFLite fallback (planned)
+
+Security & Privacy
+- Supabase RLS policies enforce per‑user row access
+- Store minimal metadata; signed URLs for audio sharing if needed
+
+Troubleshooting
+- Endpoint 404/405: client auto‑fallback; verify `BASE_URL`
+- Supabase errors: confirm table names/columns and RLS policies
+- Storage errors: check bucket `audio` and permissions
 
 ## Docker Setup
 

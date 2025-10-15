@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AlertsScreen extends StatefulWidget {
-  const AlertsScreen({Key? key}) : super(key: key);
+  const AlertsScreen({super.key});
 
   @override
   State<AlertsScreen> createState() => _AlertsScreenState();

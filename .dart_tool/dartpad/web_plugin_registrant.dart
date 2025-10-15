@@ -9,7 +9,7 @@
 import 'package:app_links_web/app_links_web.dart';
 import 'package:flutter_sound_web/flutter_sound_web.dart';
 import 'package:permission_handler_html/permission_handler_html.dart';
-import 'package:sensors_plus/src/sensors_plus_web.dart';
+import 'package:record_web/record_web.dart';
 import 'package:share_plus/src/share_plus_web.dart';
 import 'package:shared_preferences_web/shared_preferences_web.dart';
 import 'package:url_launcher_web/url_launcher_web.dart';
@@ -20,7 +20,7 @@ void registerPlugins([final Registrar? pluginRegistrar]) {
   AppLinksPluginWeb.registerWith(registrar);
   FlutterSoundPlugin.registerWith(registrar);
   WebPermissionHandler.registerWith(registrar);
-  WebSensorsPlugin.registerWith(registrar);
+  RecordPluginWeb.registerWith(registrar);
   SharePlusWebPlugin.registerWith(registrar);
   SharedPreferencesPlugin.registerWith(registrar);
   UrlLauncherPlugin.registerWith(registrar);

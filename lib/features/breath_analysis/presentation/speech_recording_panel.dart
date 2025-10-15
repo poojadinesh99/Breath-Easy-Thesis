@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SpeechRecordingPanel extends StatefulWidget {
-  const SpeechRecordingPanel({Key? key}) : super(key: key);
+  const SpeechRecordingPanel({super.key});
 
   @override
   State<SpeechRecordingPanel> createState() => _SpeechRecordingPanelState();
@@ -19,7 +19,7 @@ class _SpeechRecordingPanelState extends State<SpeechRecordingPanel> {
   bool _isUploading = false;
   String? _riskScore;
   StreamSubscription? _recorderSubscription;
-  List<double> _waveformData = [];
+  final List<double> _waveformData = [];
 
   @override
   void initState() {

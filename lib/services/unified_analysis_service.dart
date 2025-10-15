@@ -15,10 +15,17 @@ class UnifiedAnalysisService {
   /// Analyzes an audio file using the unified backend endpoint
   static Future<Map<String, dynamic>> analyzeFile(File file) async {
     try {
-      // Validate file size (minimum 1 second of audio)
+      // Validate file existence and size
+      if (!await file.exists()) {
+        throw Exception('Audio file does not exist');
+      }
+      
       final fileSize = await file.length();
-      if (fileSize < 88200) { // 44100 samples/sec * 2 bytes/sample = 88200 bytes/sec
+      if (fileSize < 88200) { // 44100 Hz * 2 bytes/sample = 88200 bytes/sec (mono)
         throw Exception('Recording too short - please record at least 1 second');
+      }
+      if (fileSize > 10 * 1024 * 1024) { // 10MB max
+        throw Exception('Recording too long - please keep it under 30 seconds');
       }
 
       // Create form data with the file
@@ -68,10 +75,18 @@ class UnifiedAnalysisService {
           'confidence': confidence,
           'text_summary': textSummary,
         };
+      } else if (response.statusCode == 400) {
+        throw Exception(
+          'Invalid audio file: ${response.data?['detail'] ?? 'Please ensure your recording is clear and at least 1 second long'}'
+        );
+      } else if (response.statusCode == 500) {
+        print('Server error details: ${response.data}'); // Log full error for debugging
+        throw Exception(
+          'Server error processing audio. Details: ${response.data?['detail'] ?? response.statusMessage ?? 'Unknown error'}'
+        );
       } else {
         throw Exception(
-          'Backend error: ${response.statusCode} - ${response.statusMessage}\n'
-          '${response.data?['detail'] ?? 'No additional details'}'
+          'Backend error (${response.statusCode}): ${response.data?['detail'] ?? response.statusMessage ?? 'Unknown error'}'
         );
       }
     } on DioException catch (e) {

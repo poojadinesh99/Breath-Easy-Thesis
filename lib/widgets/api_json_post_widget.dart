@@ -13,11 +13,11 @@ class ApiJsonPostWidget extends StatefulWidget {
   final String title;
 
   const ApiJsonPostWidget({
-    Key? key,
+    super.key,
     required this.apiEndpoint,
     this.defaultData,
     this.title = 'JSON POST Demo',
-  }) : super(key: key);
+  });
 
   @override
   State<ApiJsonPostWidget> createState() => _ApiJsonPostWidgetState();
@@ -297,7 +297,7 @@ class _ApiJsonPostWidgetState extends State<ApiJsonPostWidget> {
 
 /// Example usage widget
 class ApiJsonPostExample extends StatelessWidget {
-  const ApiJsonPostExample({Key? key}) : super(key: key);
+  const ApiJsonPostExample({super.key});
 
   @override
   Widget build(BuildContext context) {

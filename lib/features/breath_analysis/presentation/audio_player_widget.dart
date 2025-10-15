@@ -4,7 +4,7 @@ import 'package:flutter_sound/flutter_sound.dart';
 class AudioPlayerWidget extends StatefulWidget {
   final String filePath;
 
-  const AudioPlayerWidget({Key? key, required this.filePath}) : super(key: key);
+  const AudioPlayerWidget({super.key, required this.filePath});
 
   @override
   State<AudioPlayerWidget> createState() => _AudioPlayerWidgetState();
