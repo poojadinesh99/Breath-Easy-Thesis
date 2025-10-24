@@ -18,7 +18,6 @@ def test_health_endpoint():
             return True
         else:
             print('Health check failed')
-            return False
     except Exception as e:
         print(f'Error testing health endpoint: {e}')
         return False
