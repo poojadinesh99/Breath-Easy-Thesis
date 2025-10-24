@@ -7,7 +7,7 @@ class ApiPredictionWidget extends StatefulWidget {
   const ApiPredictionWidget({super.key, required this.apiUrl});
 
   @override
-  _ApiPredictionWidgetState createState() => _ApiPredictionWidgetState();
+  State<ApiPredictionWidget> createState() => _ApiPredictionWidgetState();
 }
 
 class _ApiPredictionWidgetState extends State<ApiPredictionWidget> {

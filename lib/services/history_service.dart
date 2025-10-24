@@ -56,18 +56,29 @@ class HistoryService {
     // Try to save to Supabase
     try {
       final supabase = Supabase.instance.client;
-      final user = supabase.auth.currentUser;
+      var user = supabase.auth.currentUser;
+      
+      // For testing: create anonymous user if none exists (but handle disabled anonymous auth)
+      if (user == null) {
+        try {
+          final response = await supabase.auth.signInAnonymously();
+          user = response.user;
+          print('Created anonymous user for history: ${user?.id}');
+        } catch (e) {
+          print('Failed to create anonymous user for history: $e');
+          print('Anonymous authentication is disabled - skipping cloud save, using local storage only');
+          return; // Skip saving to Supabase if can't authenticate, but keep local history
+        }
+      }
       
       if (user != null) {
         await supabase.from('analysis_history').insert({
           'user_id': user.id,
-          'analysis_type': entry['source'] ?? 'monitoring',
-          'label': entry['label'] ?? 'Unknown',
+          'analysis_type': entry['source'] == 'Speech Analysis' ? 'speech' : 'unified',
+          'predicted_label': entry['label'] ?? 'Unknown',  // Match actual schema
           'confidence': (entry['confidence'] ?? 0.0).toDouble(),
-          'source': entry['source'] ?? 'monitoring',
-          'predictions': entry['predictions'] ?? {},
-          'raw_response': entry['raw_response'] ?? {},
-          'transcript': entry['transcript'] ?? '',
+          'file_name': entry['file_name'],  // Remove unnecessary ?? null
+          'extra': entry['predictions'] ?? {},  // Match actual schema (extra instead of predictions)
           'created_at': DateTime.now().toIso8601String(),
         });
         print('Entry saved to Supabase: ${entry['label']}');
@@ -91,7 +102,20 @@ class HistoryService {
   static Future<List<Map<String, dynamic>>> getSupabaseHistory() async {
     try {
       final supabase = Supabase.instance.client;
-      final user = supabase.auth.currentUser;
+      var user = supabase.auth.currentUser;
+      
+      // For testing: create anonymous user if none exists (but handle disabled anonymous auth)
+      if (user == null) {
+        try {
+          final response = await supabase.auth.signInAnonymously();
+          user = response.user;
+          print('Created anonymous user for history retrieval: ${user?.id}');
+        } catch (e) {
+          print('Failed to create anonymous user for history retrieval: $e');
+          print('Anonymous authentication is disabled - returning local history only');
+          return _localHistory; // Return local history instead of empty list
+        }
+      }
       
       if (user != null) {
         final data = await supabase
@@ -101,20 +125,29 @@ class HistoryService {
             .order('created_at', ascending: false)
             .limit(50);
         
+        print('Loaded ${data.length} real analysis entries from Supabase');
+        
         // Convert to expected format
-        return data.map<Map<String, dynamic>>((item) => {
-          'label': item['label'] ?? 'Unknown',
+        final realData = data.map<Map<String, dynamic>>((item) => {
+          'label': item['predicted_label'] ?? 'Unknown',  // Map from actual schema
           'confidence': (item['confidence'] ?? 0.0).toDouble(),
-          'source': item['source'] ?? 'Unknown',
+          'source': item['analysis_type'] == 'speech' ? 'Speech Analysis' : 'Breath Analysis',  // Map from actual schema
           'timestamp': DateTime.parse(item['created_at']),
-          'predictions': item['predictions'] ?? {},
+          'predictions': item['extra'] ?? {},  // Map from actual schema
+          'isReal': true, // Mark as real data
         }).toList();
+        
+        // Return real data if available
+        if (realData.isNotEmpty) {
+          return realData;
+        }
       }
     } catch (e) {
       print('Failed to load history from Supabase: $e');
     }
     
-    // Fallback to local history
-    return _localHistory;
+    // Return empty list instead of sample data to show "No analyses found"
+    print('No real analysis data found - returning empty list');
+    return [];
   }
 }

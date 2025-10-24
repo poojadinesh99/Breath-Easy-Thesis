@@ -465,7 +465,7 @@
     },
     {
       "name": "record_web",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/record_web-1.2.0",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/record_web-1.2.1",
       "packageUri": "lib/",
       "languageVersion": "3.5"
     },
@@ -507,9 +507,9 @@
     },
     {
       "name": "shared_preferences_android",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.15",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/shared_preferences_android-2.4.13",
       "packageUri": "lib/",
-      "languageVersion": "3.9"
+      "languageVersion": "3.7"
     },
     {
       "name": "shared_preferences_foundation",
@@ -633,9 +633,9 @@
     },
     {
       "name": "url_launcher_android",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.24",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.20",
       "packageUri": "lib/",
-      "languageVersion": "3.9"
+      "languageVersion": "3.7"
     },
     {
       "name": "url_launcher_ios",
@@ -705,9 +705,9 @@
     },
     {
       "name": "vm_service",
-      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/vm_service-15.0.2",
+      "rootUri": "file:///Users/themysticbrew/.pub-cache/hosted/pub.dev/vm_service-15.0.0",
       "packageUri": "lib/",
-      "languageVersion": "3.5"
+      "languageVersion": "3.3"
     },
     {
       "name": "web",

@@ -7,7 +7,7 @@ class StatisticsDashboardScreen extends StatefulWidget {
   const StatisticsDashboardScreen({super.key});
 
   @override
-  _StatisticsDashboardScreenState createState() => _StatisticsDashboardScreenState();
+  State<StatisticsDashboardScreen> createState() => _StatisticsDashboardScreenState();
 }
 
 class _StatisticsDashboardScreenState extends State<StatisticsDashboardScreen> with SingleTickerProviderStateMixin {

@@ -4,6 +4,7 @@ import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../services/unified_service.dart';
+import '../services/history_service.dart';
 import '../widgets/analysis_result_card.dart';
 import '../models/prediction_response.dart';
 
@@ -53,7 +54,7 @@ class _SpeechAnalysisScreenState extends State<SpeechAnalysisScreen>
   late AnimationController _animationController;
   Timer? _recordingTimer;
   int _recordingDuration = 0;
-  static const maxDuration = Duration(seconds: 60); // Longer for speech tasks
+  static const maxDuration = Duration(seconds: 30); // Match backend limit for speech tasks
   String _instructions = '';
 
   @override
@@ -198,6 +199,21 @@ class _SpeechAnalysisScreenState extends State<SpeechAnalysisScreen>
           _result = result;
           _state = RecordingState.analyzed;
         });
+        
+        // Save analysis result to history
+        if (result.error == null && result.label.isNotEmpty) {
+          await HistoryService.addEntry({
+            'label': result.label,
+            'confidence': result.confidence,
+            'source': 'Speech Analysis',
+            'timestamp': DateTime.now(),
+            'predictions': result.predictions,
+            'raw_response': result.toJson(),
+            'transcription': result.transcription ?? '',
+            'file_name': _recordingPath != null ? _recordingPath!.split('/').last : null,  // Add file name
+          });
+          print('SpeechAnalysisScreen: Analysis result saved to history');
+        }
       }
     } catch (e) {
       print('Error analyzing recording: $e');

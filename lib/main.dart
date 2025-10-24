@@ -1,11 +1,13 @@
-import 'package:breath_easy/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'screens/main_navigation_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/breath_analysis_screen.dart';
 import 'screens/speech_analysis_screen.dart';
 import 'screens/view_history_screen.dart';
 import 'screens/symptom_tracker_screen.dart';
+import 'screens/simple_auth_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,30 +22,66 @@ void main() async {
   runApp(const BreatheasyApp());
 }
 
-class BreatheasyApp extends StatelessWidget {
+class BreatheasyApp extends StatefulWidget {
   const BreatheasyApp({Key? key}) : super(key: key);
+
+  @override
+  State<BreatheasyApp> createState() => _BreatheasyAppState();
+}
+
+class _BreatheasyAppState extends State<BreatheasyApp> {
+  bool _isDarkTheme = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemePreference();
+  }
+
+  Future<void> _loadThemePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isDarkTheme = prefs.getBool('isDarkTheme') ?? false;
+    });
+  }
+
+  Future<void> toggleTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isDarkTheme = !_isDarkTheme;
+    });
+    await prefs.setBool('isDarkTheme', _isDarkTheme);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Breatheasy',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.light().copyWith(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: Colors.grey[50],
+      title: 'Breath Easy',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.blue,
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
           elevation: 1,
           centerTitle: true,
         ),
       ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.blue,
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.grey[850],
+          foregroundColor: Colors.blue[300],
+          elevation: 1,
+          centerTitle: true,
+        ),
+      ),
+      themeMode: _isDarkTheme ? ThemeMode.dark : ThemeMode.light,
       onGenerateRoute: (settings) {
         // Define your routes here
         switch (settings.name) {
+          case '/home':
+            return MaterialPageRoute(builder: (_) => const HomeScreen());
           case '/breath':
             return MaterialPageRoute(builder: (_) => const BreathAnalysisScreen());
           case '/speech':
@@ -52,6 +90,8 @@ class BreatheasyApp extends StatelessWidget {
             return MaterialPageRoute(builder: (_) => const ViewHistoryScreen());
           case '/symptoms':
             return MaterialPageRoute(builder: (_) => const SymptomTrackerScreen());
+          case '/simple_auth':
+            return MaterialPageRoute(builder: (_) => const SimpleAuthScreen());
           default:
             return null;
         }
@@ -59,19 +99,40 @@ class BreatheasyApp extends StatelessWidget {
       home: StreamBuilder<AuthState>(
         stream: Supabase.instance.client.auth.onAuthStateChange,
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
+          // Handle connection state
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(
-                child: Text('An error occurred'),
+                child: CircularProgressIndicator(),
               ),
             );
           }
 
-          if (snapshot.hasData && snapshot.data?.session != null) {
-            return const HomeScreen();
+          if (snapshot.hasError) {
+            return Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error, size: 64, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text('Error: ${snapshot.error}'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Force rebuild
+                        setState(() {});
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
 
-          return const LoginScreen();
+          // Always show main navigation for this app (simplified auth flow)
+          return MainNavigationScreen(toggleTheme: toggleTheme);
         },
       ),
     );
