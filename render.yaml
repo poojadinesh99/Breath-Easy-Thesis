@@ -20,4 +20,4 @@ services:
     env: static
     buildCommand: "flutter build web --release"
     staticPublishPath: build/web
-    plan: free
+    plan: starter
