@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/history_service.dart';
-import 'patient_intake_form.dart';
+import 'enhanced_patient_intake_form.dart';
 import 'symptom_tracker_screen.dart';
 
 class PatientProfileScreen extends StatefulWidget {
-  const PatientProfileScreen({super.key});
+  final VoidCallback? toggleTheme;
+  
+  const PatientProfileScreen({super.key, this.toggleTheme});
 
   @override
-  _PatientProfileScreenState createState() => _PatientProfileScreenState();
+  State<PatientProfileScreen> createState() => _PatientProfileScreenState();
 }
 
-class _PatientProfileScreenState extends State<PatientProfileScreen> with SingleTickerProviderStateMixin {
+class _PatientProfileScreenState extends State<PatientProfileScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
   Map<String, dynamic>? _patientData;
   List<Map<String, dynamic>> _recentAnalyses = [];
@@ -21,13 +23,31 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> with Single
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    WidgetsBinding.instance.addObserver(this);
     _loadPatientData();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Refresh data when app comes back to foreground
+    if (state == AppLifecycleState.resumed) {
+      _refreshData();
+    }
+  }
+
+  Future<void> _refreshData() async {
+    // Only refresh if not already loading
+    if (!_isLoading) {
+      _loadPatientData();
+    }
   }
 
   Future<void> _loadPatientData() async {
@@ -61,9 +81,11 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> with Single
       });
     } catch (e) {
       // If no patient data found, that's okay
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -72,6 +94,28 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> with Single
     return Scaffold(
       appBar: AppBar(
         title: const Text('Patient Profile'),
+        actions: [
+          if (widget.toggleTheme != null)
+            IconButton(
+              icon: Icon(
+                Theme.of(context).brightness == Brightness.dark 
+                  ? Icons.light_mode 
+                  : Icons.dark_mode
+              ),
+              onPressed: widget.toggleTheme,
+              tooltip: 'Toggle Theme',
+            ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              setState(() {
+                _isLoading = true;
+              });
+              _loadPatientData();
+            },
+            tooltip: 'Refresh Profile',
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -87,7 +131,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> with Single
               controller: _tabController,
               children: [
                 _buildOverviewTab(),
-                PatientIntakeFormScreen(),
+                EnhancedPatientIntakeFormScreen(),
                 SymptomTrackerScreen(),
               ],
             ),
@@ -95,9 +139,14 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> with Single
   }
 
   Widget _buildOverviewTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
+    return RefreshIndicator(
+      onRefresh: () async {
+        await _refreshData();
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Patient Info Card
@@ -141,6 +190,46 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> with Single
                     _buildInfoRow('Respiratory History', _patientData!['has_respiratory_disease_history'] == true ? 'Yes' : 'No'),
                     _buildInfoRow('COVID Exposure', _patientData!['exposed_to_covid'] == true ? 'Yes' : 'No'),
                     _buildInfoRow('Vaccinated', _patientData!['vaccinated'] == true ? 'Yes' : 'No'),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Profile last updated: ${_formatTimestamp(_patientData!['updated_at'] ?? _patientData!['created_at'])}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.warning, color: Colors.orange, size: 32),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'No patient data found',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Please complete your intake form to get personalized health insights',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: () => _tabController.animateTo(1),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Complete Intake Form'),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -202,11 +291,48 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> with Single
                   ),
                   const SizedBox(height: 16),
                   if (_recentAnalyses.isEmpty)
-                    const Center(
-                      child: Text(
-                        'No recent analyses found.\nStart analyzing to see your history.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceVariant.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.analytics_outlined,
+                            size: 48,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No Analysis History Yet',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Start analyzing your breath or speech to see your results here.',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () => Navigator.of(context).pushNamed('/'),
+                            icon: const Icon(Icons.play_arrow),
+                            label: const Text('Start Analysis'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   else
@@ -250,6 +376,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> with Single
             ],
           ),
         ],
+        ),
       ),
     );
   }
@@ -295,19 +422,49 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> with Single
     final confidence = (analysis['confidence'] as double?) ?? 0.0;
     final source = analysis['source'] ?? 'Unknown';
     final timestamp = analysis['timestamp'] ?? DateTime.now();
+    final isReal = analysis['isReal'] ?? false;
 
-    return ListTile(
-      leading: Icon(
-        Icons.bubble_chart,
-        color: label.toLowerCase() == 'clear' ? Colors.green : Colors.orange,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).dividerColor,
+        ),
+        borderRadius: BorderRadius.circular(8),
       ),
-      title: Text(label),
-      subtitle: Text('Confidence: ${(confidence * 100).toStringAsFixed(1)}% • $source'),
-      trailing: Text(
-        _formatTimestamp(timestamp),
-        style: const TextStyle(fontSize: 12, color: Colors.grey),
+      child: ListTile(
+        leading: Icon(
+          Icons.bubble_chart,
+          color: label.toLowerCase() == 'clear' ? Colors.green : Colors.orange,
+        ),
+        title: Row(
+          children: [
+            Expanded(child: Text(label)),
+            if (isReal)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'REAL',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        subtitle: Text('Confidence: ${(confidence * 100).toStringAsFixed(1)}% • $source'),
+        trailing: Text(
+          _formatTimestamp(timestamp),
+          style: const TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        onTap: () => _showAnalysisDetails(analysis),
       ),
-      onTap: () => _showAnalysisDetails(analysis),
     );
   }
 

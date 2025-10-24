@@ -12,7 +12,7 @@ class ApiService {
   static Future<bool> checkApiHealth() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/health'),
+        Uri.parse('$baseUrl/api/v1/health'),  // Updated to correct health endpoint
       ).timeout(
         const Duration(seconds: 3),
         onTimeout: () => throw TimeoutException('API request timed out'),
@@ -31,7 +31,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getApiStatus() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/health'),
+        Uri.parse('$baseUrl/api/v1/health'),  // Updated to correct health endpoint
       ).timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {

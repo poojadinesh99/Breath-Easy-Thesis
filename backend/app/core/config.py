@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     # Supabase settings
     SUPABASE_URL: Optional[str] = None
     SUPABASE_ANON_KEY: Optional[str] = None
+    SUPABASE_KEY: Optional[str] = None  # Add this missing key
     SUPABASE_JWT_SECRET: Optional[str] = None
     
     # Feature extraction settings
@@ -44,7 +45,7 @@ class Settings(BaseSettings):
     )
     
     class Config:
-        env_file = ".env"
+        env_file = os.path.join(Path(__file__).parent.parent.parent.parent, ".env")
         case_sensitive = True
 
 settings = Settings()

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../services/unified_service.dart';
 
 class SymptomTrackerScreen extends StatefulWidget {
   const SymptomTrackerScreen({super.key});
@@ -148,119 +147,363 @@ class _SymptomTrackerScreenState extends State<SymptomTrackerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: const Text('Symptom Tracker'),
+        elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('How to Use'),
+                  content: const Text(
+                    'Select the symptoms you\'re experiencing and rate their severity from 1 (mild) to 10 (severe). '
+                    'Add any additional notes that might be helpful for your healthcare provider.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Got it'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (_error != null)
-                    Card(
-                      color: Colors.red[100],
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          _error!,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    ),
-                  Text(
-                    'Select Symptoms',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 16),
-                  ..._categories.entries.map((category) {
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: ExpansionTile(
-                        title: Text(category.key),
+                  // Header Section
+                  Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              children: category.value.map((symptom) {
-                                return Column(
-                                  children: [
-                                    CheckboxListTile(
-                                      title: Text(symptom),
-                                      value: _selectedSymptoms[symptom],
-                                      onChanged: (bool? value) {
-                                        setState(() {
-                                          _selectedSymptoms[symptom] = value ?? false;
-                                        });
-                                      },
-                                    ),
-                                    if (_selectedSymptoms[symptom] == true)
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0,
-                                          vertical: 8.0,
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                const Text('Severity:'),
-                                                Text(
-                                                  _severities[symptom]!.round().toString(),
-                                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                                ),
-                                              ],
-                                            ),
-                                            Slider(
-                                              value: _severities[symptom]!,
-                                              min: 1,
-                                              max: 10,
-                                              divisions: 9,
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  _severities[symptom] = value;
-                                                });
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    const Divider(),
-                                  ],
-                                );
-                              }).toList(),
+                          Icon(
+                            Icons.health_and_safety,
+                            size: 48,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Track Your Symptoms',
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Monitor your health by tracking symptoms and their severity. This information helps provide better care.',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
                         ],
-                      ),
-                    );
-                  }),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: TextField(
-                        controller: _notesController,
-                        decoration: const InputDecoration(
-                          labelText: 'Additional Notes',
-                          border: OutlineInputBorder(),
-                        ),
-                        maxLines: 3,
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _submitSymptoms,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
+                  
+                  if (_error != null)
+                    Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              color: Theme.of(context).colorScheme.onErrorContainer,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _error!,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onErrorContainer,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    child: Text(_isLoading ? 'Submitting...' : 'Submit'),
+                  ..._categories.entries.map((category) {
+                    return _buildSymptomSection(category.key, category.value);
+                  }),
+                  
+                  // Notes Section
+                  _buildNotesSection(),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // Submit Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading ? null : _submitSymptoms,
+                      icon: _isLoading 
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.save),
+                      label: Text(_isLoading ? 'Submitting...' : 'Submit Symptoms'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
                   ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
     );
+  }
+
+  Widget _buildSymptomSection(String categoryName, List<String> symptoms) {
+    final selectedCount = symptoms.where((s) => _selectedSymptoms[s] == true).length;
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        title: Row(
+          children: [
+            Icon(
+              _getCategoryIcon(categoryName),
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                categoryName,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (selectedCount > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$selectedCount',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        children: [
+          ...symptoms.map((symptom) => _buildSymptomTile(symptom)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSymptomTile(String symptom) {
+    final isSelected = _selectedSymptoms[symptom] ?? false;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isSelected 
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
+            : Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isSelected 
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).dividerColor,
+        ),
+      ),
+      child: Column(
+        children: [
+          CheckboxListTile(
+            title: Text(
+              symptom,
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+            value: isSelected,
+            onChanged: (bool? value) {
+              setState(() {
+                _selectedSymptoms[symptom] = value ?? false;
+              });
+            },
+            activeColor: Theme.of(context).colorScheme.primary,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+          ),
+          if (isSelected)
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Severity Level:',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _getSeverityColor(_severities[symptom]!),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${_severities[symptom]!.round()}/10',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: Theme.of(context).colorScheme.primary,
+                      inactiveTrackColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                      thumbColor: Theme.of(context).colorScheme.primary,
+                      overlayColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                      trackHeight: 4,
+                    ),
+                    child: Slider(
+                      value: _severities[symptom]!,
+                      min: 1,
+                      max: 10,
+                      divisions: 9,
+                      onChanged: (value) {
+                        setState(() {
+                          _severities[symptom] = value;
+                        });
+                      },
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Mild',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      Text(
+                        'Severe',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotesSection() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.note_alt_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Additional Notes',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _notesController,
+              decoration: InputDecoration(
+                hintText: 'Describe any additional details about your symptoms...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surface,
+                contentPadding: const EdgeInsets.all(16),
+              ),
+              maxLines: 4,
+              textCapitalization: TextCapitalization.sentences,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Respiratory':
+        return Icons.air;
+      case 'Neuro / Cognitive':
+        return Icons.psychology;
+      case 'Systemic / Other':
+        return Icons.health_and_safety;
+      default:
+        return Icons.medical_services;
+    }
+  }
+
+  Color _getSeverityColor(double severity) {
+    if (severity <= 3) return Colors.green;
+    if (severity <= 6) return Colors.orange;
+    return Colors.red;
   }
 }

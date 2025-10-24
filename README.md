@@ -1,286 +1,61 @@
-# Breath Easy Thesis — Android App (Flutter)
+# Breath Easy - AI-Powered Respiratory Health App
 
-The Breath Easy app analyzes respiratory health from breath and speech audio, provides real‑time feedback, tracks symptoms, and maintains a longitudinal health dashboard. It combines on‑device recording with remote model inference (Hugging Face Space) and persists user data in Supabase (auth, DB, storage).
+A Flutter mobile application with FastAPI backend for respiratory health analysis using machine learning.
 
-This README is provides  documentation on : architecture, data flow, models, endpoints, setup, and operations to reproduce results and run demos.
+## Features
 
----
+- 🎙️ **Audio Recording**: Record breath sounds and speech
+- 🤖 **AI Analysis**: ML-powered respiratory condition detection
+- 📊 **Health Tracking**: Patient history and progress monitoring
+- 🏥 **Patient Management**: Comprehensive intake forms and profiles
+- 🔐 **Secure Authentication**: Supabase-powered user management
 
-## Supabase Setup
+## Tech Stack
+
+**Frontend (Flutter)**
+- Flutter 3.x
+- Supabase integration
+- Audio recording capabilities
+- Modern Material Design UI
+
+**Backend (Python)**
+- FastAPI framework
+- Machine Learning (scikit-learn)
+- Audio processing (librosa, opensmile)
+- Supabase database integration
+
+## Quick Setup
 
 ### Prerequisites
+- Flutter SDK
+- Python 3.11+
+- Supabase account
 
-- A Supabase account and project
-- Supabase CLI installed (`npm install -g supabase`)
-- Flutter environment set up
+### Local Development
+1. Clone repository
+2. Install Flutter dependencies: `flutter pub get`
+3. Install Python dependencies: `cd backend && pip install -r requirements.txt`
+4. Configure Supabase credentials
+5. Run backend: `cd backend && uvicorn app.main:app --reload`
+6. Run Flutter app: `flutter run`
 
-### Supabase Project Configuration
+### Cloud Deployment
+Ready for deployment on Railway, Vercel, or Heroku with included configuration files.
 
-1. Create a new Supabase project at https://app.supabase.com.
+## Configuration
 
-2. Obtain your Supabase URL and anon/public API key from the project settings.
+Set these environment variables:
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
-3. Configure your Flutter app to use these credentials by setting environment variables or directly in your app's configuration files.
+## Project Structure
 
-### Database Schema
-
-The app uses the following tables in Supabase:
-
-- **recordings**: Stores audio recording metadata.
-- **symptoms**: Stores user symptom logs.
-- **exercises**: Stores exercise completion data, including audio recording URLs.
-- **alerts**: Stores alert messages for users.
-
-### Example Table Creation SQL
-
-```sql
-CREATE TABLE IF NOT EXISTS recordings (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id),
-  file_url text NOT NULL,
-  category text,
-  recorded_at timestamp DEFAULT now(),
-  notes text
-);
-
-CREATE TABLE IF NOT EXISTS symptoms (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id),
-  symptom_type text NOT NULL,
-  severity int,
-  notes text,
-  logged_at timestamp DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS exercises (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id),
-  exercise_name text NOT NULL,
-  completed_at timestamp DEFAULT now(),
-  recording_url text
-);
-
-CREATE TABLE IF NOT EXISTS alerts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id),
-  alert_type text NOT NULL,
-  message text,
-  created_at timestamp DEFAULT now(),
-  is_resolved boolean DEFAULT false
-);
 ```
-
-### Row-Level Security (RLS)
-
-Enable RLS on all tables and define policies to restrict data access to authenticated users:
-
-```sql
-ALTER TABLE recordings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE symptoms ENABLE ROW LEVEL SECURITY;
-ALTER TABLE exercises ENABLE ROW LEVEL SECURITY;
-ALTER TABLE alerts ENABLE ROW LEVEL SECURITY;
+├── lib/                 # Flutter app source
+├── backend/            # Python FastAPI backend
+├── supabase/          # Database migrations
+├── railway.toml       # Railway deployment config
+├── vercel.json        # Vercel deployment config
+└── Procfile          # Heroku deployment config
 ```
-
-Example policies for SELECT and INSERT:
-
-```sql
-CREATE POLICY "Allow user to view own recordings"
-ON recordings
-FOR SELECT
-USING (auth.uid() = user_id);
-
-CREATE POLICY "Allow user to insert own recordings"
-ON recordings
-FOR INSERT
-WITH CHECK (auth.uid() = user_id);
-```
-
-Repeat similar policies for other tables.
-
----
-
-## Flutter App Configuration
-
-- Use the `supabase_flutter` package for integration.
-- Initialize Supabase client with your project URL and anon key.
-- Use Supabase Auth for user authentication.
-- Store audio recordings in Supabase Storage under the `recordings` bucket.
-- Store metadata including recording URLs in the `exercises` table.
-
----
-
-## Running the App
-
-Prerequisites
-- Flutter SDK, Android SDK, device/emulator
-- Supabase project (URL + anon key)
-
-Environment variables (dart‑defines)
-- `BASE_URL`: defaults to HF Space `https://your-hf-space.hf.space`
-- `SUPABASE_URL`: your Supabase project URL
-- `SUPABASE_ANON_KEY`: your Supabase anon key
-
-Quick start (Android)
-```bash
-flutter pub get
-flutter run \
-  --dart-define=BASE_URL=https://your-hf-space.hf.space \
-  --dart-define=SUPABASE_URL=https://your-project.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=your-anon-key
-```
-
-Local backend (optional)
-```bash
-flutter run \
-  --dart-define=BASE_URL=http://192.168.0.100:8000 \
-  --dart-define=SUPABASE_URL=https://your-project.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=your-anon-key
-```
-
-Endpoint resolution
-- Client first tries `/api/v1/unified`, then `/predict/unified` automatically.
-
----
-
-## Notes
-
-- Replace any Firebase references with Supabase equivalents.
-- Ensure your Supabase storage bucket permissions and RLS policies are correctly configured.
-- For local development, you can use Supabase CLI to run a local instance.
-
----
-
-This README provides the necessary setup and configuration details for using Supabase as the backend for the Breath Easy Flutter app.
-
----
-
-## Flutter App Documentation
-
-### Overview
-
-The Breath Easy Flutter app provides a user interface for breathing analysis, symptom tracking, and exercise recording. It integrates with Supabase for backend services including authentication, data storage, and file uploads.
-
-### Features
-
-- User authentication with Supabase Auth
-- Audio recording and upload to Supabase Storage
-- Exercise data management with metadata stored in Supabase database
-- Symptom logging and history tracking
-- Real-time updates and notifications
-
-### Setup Instructions
-
-1. Ensure you have Flutter SDK installed and configured.
-2. Clone the repository and navigate to the project root.
-3. Run `flutter pub get` to install dependencies.
-4. Configure Supabase credentials in the app (e.g., in environment variables or config files).
-5. Run the app on your device or emulator using `flutter run`.
-
-### Key Files and Directories
-
-- `lib/main.dart`: App entry point and routing setup.
-- `lib/services/supabase_auth_service.dart`: Handles Supabase authentication logic.
-- `lib/features/exercises/presentation/exercises_screen.dart`: UI and logic for exercise recording and upload.
-- `lib/features/breath_analysis/presentation/record_screen.dart`: Audio recording UI.
-- `lib/screens/login_screen.dart`: User login and signup UI.
-- `lib/screens/splash_screen.dart`: Splash screen with auth state listener.
-
-### Usage Notes
-
-API Contract (normalized in app)
-- Request: multipart `file` (16 kHz mono WAV), optional `inference`, optional `audio_url`
-- Response: `predictions`, `predicted_label`, `confidence`, `source`, `processing_time`, `text_summary`, `audio_metadata`
-
-- Users must be authenticated to upload recordings and log exercises.
-- Audio files are stored in the Supabase Storage bucket named `recordings`.
-- Exercise metadata including recording URLs are stored in the `exercises` table.
-- Ensure Supabase RLS policies and storage permissions are correctly configured for secure access.
-
-### Testing
-
-- Test user signup, login, and logout flows.
-- Verify audio recording and upload functionality.
-- Check that exercise data is correctly saved and retrieved from Supabase.
-- Validate UI responsiveness and error handling.
-
----
-
-This documentation complements the backend setup instructions and provides guidance for working with the Flutter app.
-
----
-
-## Research & Design Notes
-
-Labels (examples)
-- Diseases: asthma, copd, pneumonia, bronchitis, covid19, influenza, tuberculosis, pulmonary_fibrosis, lung_cancer_screen, pertussis, bronchiolitis, rsv, pleural_effusion, ards
-- Symptoms: cough, wheeze, crackles, stridor, dyspnea, chest_tightness, fatigue, fever, sore_throat, runny_nose, hoarseness
-
-Audio & Features
-- Capture: 16 kHz mono WAV
-- Features: OpenSMILE eGeMAPS/ComParE, mel‑spectrograms
-- Models: remote DL on HF Space; optional TFLite fallback (planned)
-
-Security & Privacy
-- Supabase RLS policies enforce per‑user row access
-- Store minimal metadata; signed URLs for audio sharing if needed
-
-Troubleshooting
-- Endpoint 404/405: client auto‑fallback; verify `BASE_URL`
-- Supabase errors: confirm table names/columns and RLS policies
-- Storage errors: check bucket `audio` and permissions
-
-## Docker Setup
-
-### Prerequisites
-
-- Docker installed on your system
-- Docker Compose installed on your system
-
-### Running with Docker
-
-1. **Clone the repository:**
-   ```bash
-   git clone <your-repo-url>
-   cd Breath-Easy-Thesis
-   ```
-
-2. **Set up environment variables:**
-   ```bash
-   cd backend
-   cp .env.example .env
-   # Edit .env with your actual Supabase credentials and API keys
-   ```
-
-3. **Build and run the application:**
-   ```bash
-   docker-compose up --build
-   ```
-
-4. **Access the application:**
-   - Backend API: http://localhost:8000
-   - Health check: http://localhost:8000/health
-   - API documentation: http://localhost:8000/docs
-
-### Docker Configuration
-
-- **Backend Service**: FastAPI application running on port 8000
-- **Volume Mounts**:
-  - `./backend:/app`: Live code reload during development
-  - `./data:/app/data`: Persistent storage for features and raw audio
-- **Environment**: Variables loaded from `backend/.env`
-- **Health Check**: Automatic health monitoring every 30 seconds
-
-### Development Workflow
-
-- Make changes to backend code in the `backend/` directory
-- The container will automatically reload due to volume mounting
-- View logs with: `docker-compose logs -f breath-easy-backend`
-- Stop the application: `docker-compose down`
-
-### Production Deployment
-
-For production deployment, consider:
-- Using environment-specific `.env` files
-- Setting up proper logging and monitoring
-- Configuring reverse proxy (nginx) for SSL termination
-- Using Docker secrets for sensitive environment variables

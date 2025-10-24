@@ -4,6 +4,7 @@ import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../services/unified_service.dart';
+import '../services/history_service.dart';
 import '../widgets/recording_wave.dart';
 import '../widgets/analysis_result_card.dart';
 import '../models/prediction_response.dart';
@@ -192,14 +193,34 @@ class _BreathAnalysisScreenState extends State<BreathAnalysisScreen>
     try {
       final result = await _unifiedService.analyzeAudio(
         filePath: _recordingPath!,
-        taskType: 'breath_deep',
+        taskType: 'breath',  // Fixed: backend expects 'breath', not 'breath_deep'
       );
+
+      print('BreathAnalysisScreen: Received result: ${result.toJson()}');
+      print('BreathAnalysisScreen: Label: ${result.label}');
+      print('BreathAnalysisScreen: Confidence: ${result.confidence}');
+      print('BreathAnalysisScreen: TextSummary: ${result.textSummary}');
+      print('BreathAnalysisScreen: Error: ${result.error}');
 
       if (mounted) {
         setState(() {
           _result = result;
           _state = RecordingState.analyzed;
         });
+        
+        // Save analysis result to history
+        if (result.error == null && result.label.isNotEmpty) {
+          await HistoryService.addEntry({
+            'label': result.label,
+            'confidence': result.confidence,
+            'source': 'Breath Analysis',
+            'timestamp': DateTime.now(),
+            'predictions': result.predictions,
+            'raw_response': result.toJson(),
+            'file_name': _recordingPath != null ? _recordingPath!.split('/').last : null,  // Add file name
+          });
+          print('BreathAnalysisScreen: Analysis result saved to history');
+        }
       }
     } catch (e) {
       if (mounted) {

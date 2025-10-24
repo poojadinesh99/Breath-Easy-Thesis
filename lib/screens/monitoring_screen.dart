@@ -4,7 +4,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:async';
 import 'dart:io';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/unified_analysis_service.dart';
 import '../services/history_service.dart';

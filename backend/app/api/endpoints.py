@@ -17,9 +17,16 @@ analysis_service = AnalysisService()
 @router.get("/health")
 async def health_check():
     """Health check endpoint"""
+    # Include Supabase connection status
+    supabase_status = analysis_service.supabase_service.get_connection_status()
+    
     return {
         "status": "healthy",
-        "api_version": "1.0.0"
+        "api_version": "1.0.0",
+        "database": {
+            "connected": supabase_status["connected"],
+            "configured": supabase_status["has_credentials"]
+        }
     }
 
 @router.post("/unified")
@@ -71,12 +78,7 @@ async def analyze_audio(
         os.remove(temp_path)
         os.rmdir(temp_dir)
         
-        return JSONResponse(
-            content={
-                "status": "success",
-                "data": result
-            }
-        )
+        return JSONResponse(content=result)
         
     except Exception as e:
         # Clean up on error
@@ -92,3 +94,38 @@ async def analyze_audio(
             status_code=500,
             detail=str(e)
         )
+
+@router.get("/test-db")
+async def test_database():
+    """Test database connection and save a sample record"""
+    try:
+        # Test with minimal data to see if we can save anything
+        test_record = {
+            "user_id": None,  # NULL should work with FK constraint
+            "file_name": "test_file.wav",
+            "analysis_type": "unified",
+            "predicted_label": "test",
+            "confidence": 0.95,
+            "extra": {"test": True}
+        }
+        
+        result = analysis_service.supabase_service.client.table("analysis_history").insert(test_record).execute()
+        
+        if result.data:
+            return {
+                "status": "success",
+                "message": "Database connection working",
+                "record_id": result.data[0]["id"]
+            }
+        else:
+            return {
+                "status": "error", 
+                "message": "No data returned from insert"
+            }
+            
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e),
+            "database_status": analysis_service.supabase_service.get_connection_status()
+        }

@@ -38,7 +38,7 @@ class UnifiedAnalysisService {
 
       // Send request to backend
       final response = await _dio.post(
-        BackendConfig.unifiedAnalysis,
+        await BackendConfig.unifiedAnalysis,
         data: formData,
         options: Options(
           headers: {'Content-Type': 'multipart/form-data'},

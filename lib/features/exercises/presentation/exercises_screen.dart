@@ -190,10 +190,19 @@ Future<void> _uploadRecording() async {
             final task = _tasks[index];
             return Card(
               child: ListTile(
+                leading: Icon(
+                  task.category == "Breathing" 
+                    ? Icons.air 
+                    : task.category == "Cough"
+                      ? Icons.sick
+                      : Icons.record_voice_over,
+                  size: 32,
+                  color: Theme.of(context).primaryColor,
+                ),
                 title: Text(task.sampleName),
                 subtitle: Text(task.description),
                 trailing: IconButton(
-                  icon: Icon(Icons.mic),
+                  icon: Icon(Icons.play_arrow),
                   onPressed: () {
                     setState(() {
                       _selectedTask = task;
