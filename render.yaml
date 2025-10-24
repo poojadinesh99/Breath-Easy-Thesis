@@ -11,7 +11,13 @@ services:
         value: "3.11"
       - key: SUPABASE_URL
         sync: false
-      - key: SUPABASE_ANON_KEY  
+      - key: SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+  - type: web
+    name: breath-easy-frontend
+    env: static
+    buildCommand: "flutter build web --release"
+    staticPublishPath: build/web
+    plan: free
