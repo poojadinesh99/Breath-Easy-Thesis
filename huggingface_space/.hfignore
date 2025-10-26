@@ -1,0 +1,16 @@
+# Exclude Flutter static build artifacts from uploading to the Space
+index.html
+main.dart.js
+flutter.js
+flutter_bootstrap.js
+flutter_service_worker.js
+manifest.json
+favicon.png
+version.json
+assets/
+icons/
+canvaskit/
+
+# Node/OS junk
+**/.DS_Store
+**/node_modules

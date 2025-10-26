@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+librosa
+numpy
+opensmile
+transformers
+torch
+soundfile
+scikit-learn
+python-multipart
