@@ -190,30 +190,45 @@ def load_csv_dataset(csv_path: Path) -> Tuple[np.ndarray, np.ndarray]:
     if df.shape[1] == 1:
         raise ValueError("CSV has only one column. It must include both filename and label.")
     elif df.shape[1] == 2:
-        df.columns = ["filename", "label"]
-    elif "filename" not in df.columns or "label" not in df.columns:
-        df.columns = ["filename", "label"]
+        # Check if first column looks like filenames (ends with audio extensions)
+        first_col = df.iloc[:, 0].astype(str)
+        is_filename_col = any(
+            any(str(val).lower().endswith(ext) for ext in AUDIO_EXTS)
+            for val in first_col.head(5)  # Check first 5 rows
+        )
+        if is_filename_col:
+            # Treat as filename and label columns
+            df.columns = ["filename", "label"]
+            X_list, y_list = [], []
+            data_dir = csv_path.parent
 
-    X_list, y_list = [], []
-    data_dir = Path("backend/data")
+            for i, row in df.iterrows():
+                file_path = data_dir / row["filename"]
+                if not file_path.exists():
+                    warnings.warn(f"File not found: {file_path}")
+                    continue
+                try:
+                    vec = extract_features_file(file_path)
+                    X_list.append(vec)
+                    y_list.append(row["label"])
+                except Exception as e:
+                    warnings.warn(f"Failed to extract features from {file_path}: {e}")
 
-    for i, row in df.iterrows():
-        file_path = data_dir / row["filename"]
-        if not file_path.exists():
-            warnings.warn(f"File not found: {file_path}")
-            continue
-        try:
-            vec = extract_features_file(file_path)
-            X_list.append(vec)
-            y_list.append(row["label"])
-        except Exception as e:
-            warnings.warn(f"Failed to extract features from {file_path}: {e}")
+            if not X_list:
+                raise RuntimeError("No audio features could be extracted. Check your CSV and file paths.")
 
-    if not X_list:
-        raise RuntimeError("No audio features could be extracted. Check your CSV and file paths.")
-
-    X = np.vstack(X_list)
-    y = np.array(y_list, dtype=str)
+            X = np.vstack(X_list)
+            y = np.array(y_list, dtype=str)
+        else:
+            # Treat as features and label (last column is label, first is features)
+            print(f"[INFO] Detected 2 columns, first does not look like filenames. Treating as pre-extracted features + label.")
+            X = df.iloc[:, :-1].values.astype(np.float32)
+            y = df.iloc[:, -1].values.astype(str)
+    else:
+        # Assume features + label (last column is label, rest are features)
+        print(f"[INFO] Detected {df.shape[1]} columns. Treating as pre-extracted features + label.")
+        X = df.iloc[:, :-1].values.astype(np.float32)
+        y = df.iloc[:, -1].values.astype(str)
     return X, y
 
 
