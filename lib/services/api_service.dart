@@ -46,8 +46,9 @@ class ApiService {
   /// Analyzes an audio file by sending it to the backend API
   static Future<Map<String, dynamic>> analyzeAudioFile(File audioFile) async {
     try {
-      final uri = Uri.parse('$baseUrl/predict');
+      final uri = Uri.parse('$baseUrl/api/v1/unified');
       final req = http.MultipartRequest('POST', uri);
+      req.fields['task_type'] = 'breath'; // Default to breath analysis
       req.files.add(
         await http.MultipartFile.fromPath('file', audioFile.path, filename: 'audio_sample.wav'),
       );
