@@ -1,37 +1,39 @@
 ---
-title: Breath Easy – API Backend
+title: Breath Easy – Respiratory Sound Analysis
 emoji: 🫁
 colorFrom: blue
 colorTo: green
-sdk: docker
+sdk: static
 sdk_version: 1.0.0
+app_file: index.html
 pinned: false
 ---
 
-# Breath Easy – API Backend
+# Breath Easy – Respiratory Sound Analysis
 
-FastAPI backend for respiratory sound analysis. Deploys via Docker on Hugging Face Spaces and exposes health (`/`) and inference (`/predict`) endpoints.
+Upload or record a short breathing clip to detect potential respiratory symptoms using machine learning.
 
-## Endpoints
+## Features
 
-- `GET /` — health/status
-- `POST /predict` — multipart file upload (`file`) of audio (wav/flac) returns JSON with `prediction` and optional `confidence`.
+- **Audio Recording**: Record directly from your microphone
+- **Real-time Analysis**: Instant prediction of respiratory patterns
+- **ML-Powered**: Uses a trained Random Forest model to classify breathing sounds
+- **User-Friendly**: Clean, intuitive interface with clear results
 
-## Deploy notes
+## How it works
 
-- Space uses `sdk: docker` and starts `uvicorn main_app:app --port 7860`.
-- `main_app.py` is the entrypoint in the image.
-- Place `model_rf.pkl` next to the Dockerfile (already included).
+1. Record or upload a short audio clip of breathing sounds
+2. The system extracts MFCC (Mel-Frequency Cepstral Coefficients) features
+3. A pre-trained Random Forest model analyzes the features
+4. Results are displayed with clear, actionable feedback
 
-## Model Notes
+## Model Details
 
-- Expects `model_rf.pkl` compatible with `joblib.load`.
-- Replace placeholder feature function with your MFCC pipeline if needed.
+- **Algorithm**: Random Forest Classifier
+- **Features**: 120-dimensional MFCC features (mean + std of 20 coefficients)
+- **Classes**: Normal, Cough, Heavy Breathing, Throat Clearing
+- **Training Data**: Respiratory sound dataset
 
 ## Usage
 
-POST an audio file to `/predict` with form field `file`.
-
-Example (curl):
-
-curl -X POST -F "file=@sample.wav" https://hf.space/embed/<org>/<space-name>/predict
+Simply click the microphone button to record. The analysis will be performed automatically and results displayed instantly.

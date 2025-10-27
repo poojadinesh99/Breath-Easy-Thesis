@@ -12,9 +12,9 @@ class ApiService {
   static Future<bool> checkApiHealth() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/v1/health'),  // Updated to correct health endpoint
+        Uri.parse('$baseUrl/'),
       ).timeout(
-        const Duration(seconds: 3),
+        const Duration(seconds: 20),
         onTimeout: () => throw TimeoutException('API request timed out'),
       );
 
@@ -31,8 +31,8 @@ class ApiService {
   static Future<Map<String, dynamic>> getApiStatus() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/v1/health'),  // Updated to correct health endpoint
-      ).timeout(const Duration(seconds: 5));
+        Uri.parse('$baseUrl/'),
+      ).timeout(const Duration(seconds: 25));
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -46,12 +46,12 @@ class ApiService {
   /// Analyzes an audio file by sending it to the backend API
   static Future<Map<String, dynamic>> analyzeAudioFile(File audioFile) async {
     try {
-      final uri = Uri.parse('$baseUrl/api/v1/unified');
+      final uri = Uri.parse('$baseUrl/predict');
       final req = http.MultipartRequest('POST', uri);
       req.files.add(
         await http.MultipartFile.fromPath('file', audioFile.path, filename: 'audio_sample.wav'),
       );
-      final resp = await req.send().timeout(const Duration(seconds: 30));
+      final resp = await req.send().timeout(const Duration(seconds: 60));
       if (resp.statusCode == 200) {
         final body = await resp.stream.bytesToString();
         return _normalize(json.decode(body));
@@ -76,7 +76,7 @@ class ApiService {
   static Future<Map<String, dynamic>> analyzeAudioData(List<double> audioData) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/predict/unified'),
+        Uri.parse('$baseUrl/predict'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'audio_data': audioData}),
       );

@@ -2,29 +2,28 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class BackendConfig {
-  static String? _cachedUrl;
-  static DateTime? _lastCheck;
-  
-  // Only use local backend for now
-  static final String _localUrl = _getLocalUrl();
+  // Hugging Face Space runtime URL (not the repo page URL)
+  static const String cloudUrl = 'https://poojadinesh99-breath-easy-thesis.hf.space';
 
-  /// Returns the base URL for the API, with connectivity validation
-  static Future<String> getValidatedBaseUrl() async {
-    // Always use local backend
-    return _localUrl;
+  // Toggle to force local vs cloud; set to false to use cloud
+  static const bool useLocal = false;
+
+  static String _localUrl() {
+    const computerIP = '192.168.178.42';
+    return 'http://$computerIP:8000';
   }
 
-  static String _getLocalUrl() {
-    const computerIP = '192.168.178.42';  // Network IP for device testing
-    return 'http://$computerIP:8000';  // Local backend only - now binding to 0.0.0.0
-  }
+  // Base URL used by the app
+  static String get baseUrl => useLocal ? _localUrl() : cloudUrl;
 
+  /// Returns the base URL for the API. Keep simple and fast.
+  static Future<String> getValidatedBaseUrl() async => baseUrl;
+
+  // Optional connectivity probe (kept for future use)
   static Future<bool> _canConnect(String url) async {
-    if (url.isEmpty) return false;
-    
     try {
-      final uri = Uri.parse('$url/api/v1/health');
-      final response = await http.get(uri).timeout(const Duration(seconds: 5));
+      final uri = Uri.parse('$url/');
+      final response = await http.get(uri).timeout(const Duration(seconds: 10));
       return response.statusCode == 200;
     } catch (e) {
       debugPrint('Connection test failed for $url: $e');
@@ -32,14 +31,10 @@ class BackendConfig {
     }
   }
 
-  // Development backend URL (fallback)
-  static String get baseUrl {
-    return _getLocalUrl();
-  }
-
-  // API endpoints - these will use the validated URL
-  static Future<String> get healthCheck async => '${await getValidatedBaseUrl()}/api/v1/health';
-  static Future<String> get unifiedAnalysis async => '${await getValidatedBaseUrl()}/api/v1/unified';
-  static Future<String> get symptomsLog async => '${await getValidatedBaseUrl()}/api/v1/symptoms/log';
-  static Future<String> get history async => '${await getValidatedBaseUrl()}/api/v1/history';
+  // API endpoints built from the selected base URL
+  static Future<String> get healthCheck async => '${await getValidatedBaseUrl()}/';
+  static Future<String> get unifiedAnalysis async => '${await getValidatedBaseUrl()}/predict';
+  // The following are not exposed on the Space; keep placeholders for future
+  static Future<String> get symptomsLog async => '${await getValidatedBaseUrl()}/symptoms/log';
+  static Future<String> get history async => '${await getValidatedBaseUrl()}/history';
 }
