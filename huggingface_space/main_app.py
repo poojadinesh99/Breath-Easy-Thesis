@@ -1,6 +1,8 @@
 import sys, os
 sys.path.append(os.getcwd())
-from fastapi import FastAPI, UploadFile, File, Request
+sys.path.append(os.path.join(os.getcwd(), '..'))
+
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 import numpy as np
@@ -11,9 +13,9 @@ import soundfile as sf
 
 try:
     from backend.app.services.feature_extraction import extract_features as be_extract_features
-except ImportError as e:
+except ImportError:
     be_extract_features = None
-    print("⚠️ Warning: Could not import full feature extractor:", e)
+    print("⚠️ Warning: Could not import full feature extractor")
 
 app = FastAPI(title="Breath Easy API", version="0.1.0")
 
@@ -33,9 +35,9 @@ def _lazy_load_model():
     """Lazy-load the trained RandomForest model + label map."""
     global MODEL, LABELS
     if MODEL is None:
-        MODEL = joblib.load("backend/ml/models/model_rf.pkl")
+        MODEL = joblib.load("model_rf.pkl")
     if LABELS is None:
-        with open("backend/ml/models/label_map.json", "r") as f:
+        with open("label_map.json", "r") as f:
             LABELS = json.load(f)
 
 
@@ -45,27 +47,11 @@ def root():
 
 
 @app.post("/predict")
-async def predict(request: Request, file: UploadFile | None = File(default=None)):
+async def predict(file: UploadFile = File(...)):
     """Run respiratory sound prediction."""
     _lazy_load_model()
-    data = None
-    sr = 16000
-
-    # Prefer multipart file if provided
-    if file is not None:
-        raw = await file.read()
-        data, sr = sf.read(io.BytesIO(raw))
-    else:
-        # Fallback: accept JSON body with {"audio_data": [..], "sample_rate": 16000}
-        try:
-            payload = await request.json()
-            samples = payload.get("audio_data")
-            if samples is None:
-                return JSONResponse({"error": "Missing audio_data"}, status_code=400)
-            sr = int(payload.get("sample_rate", 16000))
-            data = np.asarray(samples, dtype=np.float32)
-        except Exception as e:
-            return JSONResponse({"error": f"Invalid request body: {e}"}, status_code=400)
+    raw = await file.read()
+    data, sr = sf.read(io.BytesIO(raw))
     if data.ndim > 1:
         data = np.mean(data, axis=1)
 
@@ -79,22 +65,20 @@ async def predict(request: Request, file: UploadFile | None = File(default=None)
         feats = np.array([np.mean(audio), np.std(audio)], dtype=np.float32).reshape(1, -1)
 
     try:
-        pred = MODEL.predict([feats[0]]) if feats.ndim > 1 else MODEL.predict(feats)
-        proba_fn = getattr(MODEL, "predict_proba", None)
-        conf = float(np.max(proba_fn(feats))) if callable(proba_fn) else None
+        # Ensure feats is 2D for sklearn
+        if feats.ndim == 1:
+            feats = feats.reshape(1, -1)
 
-        label_idx = int(pred[0]) if len(pred) else None
+        pred = MODEL.predict(feats)
+        proba = getattr(MODEL, "predict_proba", None)
+        conf = float(np.max(proba(feats))) if callable(proba) else None
+        label_idx = pred[0] if len(pred) else None
         label_name = None
         if LABELS is not None and label_idx is not None:
             if isinstance(LABELS, dict):
                 label_name = LABELS.get(str(label_idx), LABELS.get(label_idx))
-            elif isinstance(LABELS, list) and label_idx < len(LABELS):
+            elif isinstance(LABELS, list) and isinstance(label_idx, (int, np.integer)) and label_idx < len(LABELS):
                 label_name = LABELS[label_idx]
-
-        return {
-            "prediction": label_idx,
-            "label": label_name,
-            "confidence": conf,
-        }
+        return {"prediction": int(label_idx) if label_idx is not None else None, "label": label_name, "confidence": conf}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
