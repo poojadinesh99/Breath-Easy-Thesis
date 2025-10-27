@@ -77,9 +77,9 @@ class ApiService {
   static Future<Map<String, dynamic>> analyzeAudioData(List<double> audioData) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/predict'),
+        Uri.parse('$baseUrl/api/v1/unified'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'audio_data': audioData}),
+        body: json.encode({'audio_data': audioData, 'task_type': 'breath'}),
       );
 
       if (response.statusCode == 200) {
