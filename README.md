@@ -1,61 +1,106 @@
-# Breath Easy - AI-Powered Respiratory Health App
+---
+title: Breath Easy Backend
+emoji: 🫁
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_file: main_app.py
+pinned: false
+---
 
-A Flutter mobile application with FastAPI backend for respiratory health analysis using machine learning.
+# 🫁 Breath Easy Thesis App
 
-## Features
+![Flutter](https://img.shields.io/badge/Made_with-Flutter-blue?logo=flutter)
+![FastAPI](https://img.shields.io/badge/API-FastAPI-green?logo=fastapi)
+![Hugging Face](https://img.shields.io/badge/Hosted_on-HuggingFace-yellow?logo=huggingface)
 
-- 🎙️ **Audio Recording**: Record breath sounds and speech
-- 🤖 **AI Analysis**: ML-powered respiratory condition detection
-- 📊 **Health Tracking**: Patient history and progress monitoring
-- 🏥 **Patient Management**: Comprehensive intake forms and profiles
-- 🔐 **Secure Authentication**: Supabase-powered user management
+---
 
-## Tech Stack
+## 🧠 Project Overview
 
-**Frontend (Flutter)**
-- Flutter 3.x
-- Supabase integration
-- Audio recording capabilities
-- Modern Material Design UI
+**Breath Easy** is a cross-platform mobile application and backend system that:
+- Captures audio of breathing/speech
+- Extracts features using OpenSMILE
+- Uses a trained Random Forest model to predict respiratory conditions
+- Supports both WAV file input and real-time microphone input
+- Offers an intuitive Flutter-based UI for patients
 
-**Backend (Python)**
-- FastAPI framework
-- Machine Learning (scikit-learn)
-- Audio processing (librosa, opensmile)
-- Supabase database integration
+---
 
-## Quick Setup
+## 📱 Frontend – Flutter App
 
-### Prerequisites
-- Flutter SDK
-- Python 3.11+
-- Supabase account
+The Flutter app provides:
+- 🔘 Home screen with live recording
+- ✅ Symptom Tracker
+- 🧑‍⚕️ Patient Profile
+- 📈 AI Predictions from backend API
+- 📡 Supabase authentication (optional)
 
-### Local Development
-1. Clone repository
-2. Install Flutter dependencies: `flutter pub get`
-3. Install Python dependencies: `cd backend && pip install -r requirements.txt`
-4. Configure Supabase credentials
-5. Run backend: `cd backend && uvicorn app.main:app --reload`
-6. Run Flutter app: `flutter run`
+### 🔧 Getting Started with Flutter
 
-### Cloud Deployment
-Ready for deployment on Railway, Vercel, or Heroku with included configuration files.
+```bash
+flutter pub get
+flutter run
+```
 
-## Configuration
+### 📚 Resources
+- [Flutter Codelabs](https://docs.flutter.dev/codelabs)
+- [Flutter Cookbook](https://docs.flutter.dev/cookbook)
+- [Flutter API Reference](https://api.flutter.dev/)
 
-Set these environment variables:
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
+---
 
-## Project Structure
+## ⚙️ Backend – FastAPI (Hugging Face Space)
+
+The backend is built with FastAPI and hosted via Hugging Face.
+
+### 🔌 Prediction Endpoint
+
+```http
+POST /predict
+Content-Type: multipart/form-data
+
+Field: file=<WAV audio>
+Field: task_type=breath
+```
+
+### ✅ Example Response
+
+```json
+{
+  "label": "Asthmatic",
+  "confidence": 0.92,
+  "text_summary": "Symptoms consistent with mild wheezing",
+  "possible_conditions": ["Asthma", "Bronchitis"]
+}
+```
+
+### 🔍 Other Routes
+- `GET /` – Health Check
+- `GET /docs` – OpenAPI docs (Swagger)
+
+### 🛠️ Architecture
 
 ```
-├── lib/                 # Flutter app source
-├── backend/            # Python FastAPI backend
-├── supabase/          # Database migrations
-├── railway.toml       # Railway deployment config
-├── vercel.json        # Vercel deployment config
-└── Procfile          # Heroku deployment config
+Flutter App --> FastAPI Backend --> RF Model + OpenSMILE
+                            |
+                            --> Hugging Face Space (Docker)
 ```
+
+### 📦 Deployment Notes
+- Hugging Face Space is configured via the YAML block at the top of this file.
+- Backend `app_file` is `main_app.py`, and is containerized with Docker.
+- Whisper transcription only runs when source is a file path (not in-memory array).
+- `/predict` accepts `task_type=breath` or `task_type=speech` depending on your model needs.
+
+---
+
+## 🎓 Author
+Pooja Dinesh  
+👩‍🎓 Master's in Data Science – FAU Erlangen-Nürnberg  
+🧪 Thesis Project (2025)  
+📬 pooja.dinesh@fau.de  
+🌐 [Hugging Face Space](https://huggingface.co/spaces/pooja-dinesh/breath-easy)
+
+## 📝 License
+This project is for academic use. For reproduction, citation, or collaboration, please contact the author.
