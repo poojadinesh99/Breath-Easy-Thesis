@@ -20,15 +20,16 @@ class PredictService {
     inference ??= await getInferenceSource();
     final form = FormData.fromMap({
       'file': await MultipartFile.fromFile(file.path, filename: 'input.wav', contentType: MediaType('audio', 'wav')),
+      'task_type': 'breath', // Required parameter for unified endpoint
       if (inference != 'default') 'inference': inference,
     });
     try {
-      final resp = await _dio.post('${BackendConfig.baseUrl}/predict', data: form);
+      final resp = await _dio.post('${BackendConfig.baseUrl}/api/v1/unified', data: form);
       return Map<String, dynamic>.from(resp.data as Map);
     } on DioException catch (e) {
       // simple one-shot retry for connection timeout
       if (e.type == DioExceptionType.connectionTimeout) {
-        final resp = await _dio.post('${BackendConfig.baseUrl}/predict', data: form);
+        final resp = await _dio.post('${BackendConfig.baseUrl}/api/v1/unified', data: form);
         return Map<String, dynamic>.from(resp.data as Map);
       }
       rethrow;
