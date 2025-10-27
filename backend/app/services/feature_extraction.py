@@ -5,7 +5,8 @@ Uses OpenSMILE for breath analysis and Whisper for speech analysis.
 import os
 import logging
 import numpy as np
-from typing import Dict, Any
+from typing import Dict, Any, Union
+from pathlib import Path
 import librosa
 
 logger = logging.getLogger(__name__)
@@ -70,14 +71,16 @@ except Exception as e:
     logger.warning(f"Failed to initialize Whisper: {e}")
     whisper = None
 
-def extract_features(file_path: str, task_type: str = "breath") -> Dict[str, Any]:
+def extract_features(source: Union[str, Path, np.ndarray], task_type: str = "breath", sr: int = 16000) -> Dict[str, Any]:
     """
-    Extract features from audio file based on task type.
+    Extract features from audio input based on task type.
+    Accepts either a file path (str/Path) or a raw waveform (np.ndarray).
     Uses OpenSMILE features but ensures exactly 120 features for the model.
     
     Args:
-        file_path: Path to normalized audio file (16kHz mono WAV)
+        source: Path to normalized audio file (16kHz mono WAV) or a waveform array
         task_type: Type of analysis ("breath" or "speech")
+        sr: Sample rate to assume when source is a waveform array
     
     Returns:
         Dict containing extracted features
@@ -85,8 +88,21 @@ def extract_features(file_path: str, task_type: str = "breath") -> Dict[str, Any
     features = {}
     
     try:
-        # Load audio with librosa for basic features
-        y, sr = librosa.load(file_path, sr=16000)
+        # Determine input type and obtain waveform y and sample rate sr
+        y: np.ndarray
+        input_type = None
+        if isinstance(source, (str, Path)):
+            input_type = "file"
+            file_path = str(source)
+            y, sr = librosa.load(file_path, sr=16000)
+        elif isinstance(source, np.ndarray):
+            input_type = "array"
+            y = source.astype(np.float32)
+            # sr is provided via argument when array is passed
+        else:
+            raise ValueError(f"Unsupported audio source type: {type(source)}")
+
+        logger.info(f"extract_features received {input_type} input (sr={sr})")
         # --- Noise Floor Check ---
         rms = np.mean(librosa.feature.rms(y=y))
         if rms > 0.1:
@@ -94,7 +110,16 @@ def extract_features(file_path: str, task_type: str = "breath") -> Dict[str, Any
             y = y / (1 + (rms * 5))  # normalize loud backgrounds
 
         # Extract OpenSMILE features
-        smile_features = smile.process_file(file_path)
+        if 'file_path' in locals() and os.path.isfile(file_path):
+            smile_features = smile.process_file(file_path)
+        else:
+            # If we don't have a file path (array input), approximate by processing from memory
+            # OpenSMILE expects a file; create a temporary in-memory WAV buffer if needed
+            import soundfile as sf
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as tmp:
+                sf.write(tmp.name, y, sr)
+                smile_features = smile.process_file(tmp.name)
         # Flatten OpenSMILE features to 1D array
         opensmile_features = smile_features.values.flatten()
         logger.info(f"OpenSMILE features shape: {opensmile_features.shape}")
@@ -323,13 +348,13 @@ def extract_features(file_path: str, task_type: str = "breath") -> Dict[str, Any
         if task_type == "speech":
             # Add speech recognition for speech tasks with robust error handling
             try:
-                if whisper is not None:
+                if whisper is not None and isinstance(source, (str, Path)):
                     logger.info("Starting speech transcription...")
-                    transcription = whisper(file_path)
+                    transcription = whisper(str(source))
                     features["transcription"] = transcription["text"]
                     logger.info(f"✓ Speech transcription successful: {transcription['text'][:100]}...")
                 else:
-                    logger.warning(" Whisper model not available, skipping transcription")
+                    logger.warning(" Whisper model not available or source not a file, skipping transcription")
                     features["transcription"] = "Speech analysis unavailable - transcription model not loaded"
             except Exception as e:
                 logger.error(f"Speech recognition failed: {e}")
