@@ -5,7 +5,6 @@ Handles both breath and speech analysis with proper audio normalization.
 import os
 import logging
 from typing import Dict, Any
-import numpy as np
 import time
 from fastapi import HTTPException
 
@@ -13,7 +12,6 @@ from .audio_utils import normalize_audio, AudioNormalizationError
 from .feature_extraction import extract_features
 from .model_service import ModelService
 from .supabase_service import SupabaseService
-from ..core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -86,36 +84,32 @@ class AnalysisService:
             harsh_ratio = float(features.get("harsh_sound_ratio", 0.0))
             logger.info(f"Energy={energy_var:.2f}, Onset={onset_rate:.2f}, Harsh={harsh_ratio:.2f}")
 
-            # --- 🩺 Fix false heavy_breathing for calm, steady breath ---
+            # --- 🩺 Fix false heavy_breathing for calm breathing ---
             if label == "heavy_breathing" and energy_var < 2.0 and onset_rate < 3.5:
                 logger.info("🫁 Adjusted calm heavy_breathing → normal (stable low energy pattern)")
                 label = "normal"
                 confidence = 0.9
 
-            # --- 💥 Manual cough boost ---
-            if energy_var > 2.5 and harsh_ratio > 0.15 and onset_rate < 3:
-                class_probs["cough"] = max(class_probs.get("cough", 0), 0.7)
-                if class_probs["cough"] > confidence:
+            # --- 💥 Unified Cough vs Throat Clearing rule ---
+            if 2.3 <= energy_var <= 3.5 and onset_rate < 3.5:
+                if harsh_ratio >= 0.10:
+                    logger.info("💥 Adjusted to cough (moderate–high energy short burst)")
                     label = "cough"
-                    confidence = class_probs["cough"]
-                    logger.info("💥 Manual cough boost triggered")
-
-            # --- 🔄 Detect throat clearing ---
-            if label != "throat_clearing" and 2.3 <= energy_var <= 3.2 and 2.0 <= onset_rate <= 3.2 and harsh_ratio < 0.18:
-                logger.info("🔄 Adjusting to throat_clearing (moderate tone pattern)")
-                label = "throat_clearing"
-                confidence = 0.86
+                    confidence = 0.88
+                elif 0.05 <= harsh_ratio < 0.10:
+                    logger.info("🔄 Adjusted to throat_clearing (mild energy, low harshness)")
+                    label = "throat_clearing"
+                    confidence = 0.84
 
             # --- 🎙️ Speech-specific correction ---
             if task_type == "speech":
-                if 1.0 < energy_var < 2.2 and 3.0 <= onset_rate <= 4.0 and harsh_ratio < 0.15:
-                    logger.info("🎙️ Adjusted speech segment with short energy bursts → throat_clearing")
-                    label = "throat_clearing"
-                    confidence = 0.85
-
-                elif energy_var > 1.5 and harsh_ratio > 0.1 and onset_rate < 3.5:
+                if energy_var > 1.5 and harsh_ratio > 0.1 and onset_rate < 3.5:
                     logger.info("🎙️ Adjusted speech burst → cough (speech context)")
                     label = "cough"
+                    confidence = 0.85
+                elif 1.0 < energy_var < 2.2 and 3.0 <= onset_rate <= 4.0 and harsh_ratio < 0.15:
+                    logger.info("🎙️ Adjusted speech segment → throat_clearing")
+                    label = "throat_clearing"
                     confidence = 0.83
 
             # --- 🧠 Map symptom to likely conditions ---
@@ -173,7 +167,6 @@ class AnalysisService:
                 "text_summary": f"❌ Analysis failed: {e}"
             }
 
-
     def _generate_summary(
         self,
         predictions: Dict[str, Any],
@@ -185,22 +178,20 @@ class AnalysisService:
         label = predictions.get("predicted_class", "Unknown")
         confidence = predictions.get("confidence", 0.0)
 
-        if label == "normal":
-            emoji, msg = "✅", "Normal breathing detected"
-        elif label == "cough":
-            emoji, msg = "🤧", "Cough detected"
-        elif label == "heavy_breathing":
-            emoji, msg = "⚠️", "Heavy breathing detected"
-        elif label == "throat_clearing":
-            emoji, msg = "🤧", "Throat clearing detected"
-        else:
-            emoji, msg = "🔍", f"{label.title()} detected"
+        emojis = {
+            "normal": "✅",
+            "cough": "🤧",
+            "throat_clearing": "🗣️",
+            "heavy_breathing": "⚠️",
+        }
+        emoji = emojis.get(label, "🔍")
+        msg = label.replace("_", " ").title()
 
         summary = (
-            f"{emoji} Detected **{label.replace('_', ' ')}** pattern "
+            f"{emoji} Detected **{msg}** pattern "
             f"with {confidence*100:.1f}% confidence.\n"
             f"💡 Possible associated conditions: {disease_hint}.\n"
             f"⚙️ Note: This mapping is heuristic — confirm with clinical diagnosis.\n\n"
-            f"🩺 This is a prototype AI model. For medical concerns, always consult healthcare professionals."
+            f"🩺 Prototype AI system — not a medical device."
         )
         return summary

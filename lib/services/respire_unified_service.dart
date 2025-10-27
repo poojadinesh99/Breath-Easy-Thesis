@@ -26,7 +26,7 @@ class RespireUnifiedService {
     await _recorder.stopRecorder();
 
     final base = BackendConfig.baseUrl;
-    final endpoints = ['$base/api/v1/unified', '$base/predict/unified'];
+    final endpoints = ['$base/predict'];
     DioException? last;
     try {
       for (final url in endpoints) {
@@ -50,7 +50,7 @@ class RespireUnifiedService {
 
   Future<Map<String, dynamic>> analyzeFile(File file, {String taskType = 'general'}) async {
     final base = BackendConfig.baseUrl;
-    final endpoints = ['$base/api/v1/unified', '$base/predict/unified'];
+    final endpoints = ['$base/predict'];
     DioException? last;
     for (final url in endpoints) {
       try {
