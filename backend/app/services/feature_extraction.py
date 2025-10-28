@@ -393,3 +393,50 @@ def is_benign(features: Dict[str, Any]) -> bool:
         energy_variation < 1.0 and          # Low energy variation
         signal_strength < 0.005             # Very low signal strength (quiet/normal recording)
     )
+
+def detect_input_type(features: Dict[str, Any]) -> str:
+    """
+    Lightweight rule-based classifier to detect acoustic event type.
+    Uses cough ratios, energy, onset, and harshness.
+    """
+    cough_ratio = features.get("cough_event_ratio", 0)
+    freq_ratio = features.get("cough_frequency_ratio", 0)
+    energy_var = features.get("energy_variation", 0)
+    onset = features.get("onset_rate", 0)
+    harsh = features.get("harsh_sound_ratio", 0)
+
+    # --- Heuristic classification logic ---
+    if cough_ratio > 0.08 and freq_ratio > 1.2 and energy_var > 0.5:
+        return "cough"
+    elif energy_var > 2.3 and onset < 3.0 and harsh < 0.25:
+        return "heavy_breathing"
+    elif 0.04 <= harsh < 0.12 and 1.5 <= energy_var <= 2.5:
+        return "throat_clearing"
+    else:
+        return "normal"
+
+def detect_task_type(y: np.ndarray, sr: int = 16000) -> str:
+    """
+    Automatically classify whether the input is speech or breath.
+    Uses short-term energy + voice activity cues.
+    Returns 'speech' or 'breath'.
+    """
+    try:
+        # 1️⃣ Energy and zero-crossing features
+        rms = librosa.feature.rms(y=y)[0]
+        zcr = librosa.feature.zero_crossing_rate(y)[0]
+
+        # 2️⃣ If audio contains long sustained energy bursts or voice patterns → speech
+        voiced_ratio = np.mean(rms > np.mean(rms) * 1.2)
+        zcr_mean = np.mean(zcr)
+
+        # 3️⃣ Simple heuristic thresholds
+        if voiced_ratio > 0.25 and zcr_mean > 0.08:
+            logger.info(f"🗣️ Detected probable speech (voiced_ratio={voiced_ratio:.2f}, zcr={zcr_mean:.3f})")
+            return "speech"
+        else:
+            logger.info(f"🌬️ Detected probable breath (voiced_ratio={voiced_ratio:.2f}, zcr={zcr_mean:.3f})")
+            return "breath"
+    except Exception as e:
+        logger.warning(f"Task-type detection failed, defaulting to 'breath': {e}")
+        return "breath"

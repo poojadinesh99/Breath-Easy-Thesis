@@ -33,7 +33,12 @@ class SupabaseService:
                 self.connected = True
                 logger.info("✓ Supabase client initialized successfully")
             else:
-                logger.warning("⚠️ Supabase credentials not configured - running in offline mode")
+                missing = []
+                if not settings.SUPABASE_URL:
+                    missing.append("SUPABASE_URL")
+                if not settings.SUPABASE_KEY:
+                    missing.append("SUPABASE_KEY")
+                logger.warning(f"⚠️ Supabase credentials not configured ({', '.join(missing)}) - running in offline mode")
                 
         except ImportError:
             logger.warning("⚠️ Supabase library not installed - running in offline mode")
@@ -58,7 +63,8 @@ class SupabaseService:
             Dict containing save status and record information
         """
         if not self.connected:
-            logger.info("📴 Database offline - analysis not saved")
+            status = self.get_connection_status()
+            logger.info(f"📴 Database offline - analysis not saved (connected={status['connected']}, has_credentials={status['has_credentials']}, url={status['url']})")
             return {"status": "offline", "saved": False}
         
         try:
