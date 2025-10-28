@@ -103,12 +103,23 @@ class AnalysisService:
             logger.info(f"Energy={energy_var:.2f}, Onset={onset_rate:.2f}, Harsh={harsh_ratio:.2f}")
 
             # --- 🧠 Step 1: Auto-detect acoustic input type ---
+            logger.info(f"About to call detect_input_type with features keys: {list(features.keys())}")
             detected_type = detect_input_type(features)
             logger.info(f"🧩 Auto-detected input type: {detected_type}")
 
-            # --- Step 2: Re-align predictions if mismatch detected ---
-            if confidence < 0.65 or (label != detected_type and detected_type != "normal"):
-                logger.info(f"⚖️ Re-aligning model prediction ({label}) → detected ({detected_type})")
+            # --- Step 2: Force override model prediction with detected type for better accuracy ---
+            # The ML model is biased toward heavy_breathing, so we trust the rule-based detection more
+            # Especially prioritize cough detection when rule-based detection finds it
+            if detected_type == "cough":
+                logger.info(f"⚖️ Strong cough detected - overriding model prediction ({label}) → detected ({detected_type})")
+                label = detected_type
+                confidence = max(confidence, 0.90)  # Higher confidence for cough detection
+            elif detected_type != "normal":
+                logger.info(f"⚖️ Overriding model prediction ({label}) → detected ({detected_type})")
+                label = detected_type
+                confidence = max(confidence, 0.85)
+            elif confidence < 0.65:
+                logger.info(f"⚖️ Low confidence, using detected type ({detected_type})")
                 label = detected_type
                 confidence = max(confidence, 0.82)
 

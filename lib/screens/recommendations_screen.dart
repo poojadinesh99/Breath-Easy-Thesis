@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/recommendations_service.dart';
 
 class RecommendationsScreen extends StatefulWidget {
   const RecommendationsScreen({super.key});
@@ -8,58 +9,154 @@ class RecommendationsScreen extends StatefulWidget {
 }
 
 class _RecommendationsScreenState extends State<RecommendationsScreen> {
+  final RecommendationsService _recommendationsService = RecommendationsService();
+  List<Recommendation> _recommendations = [];
+  bool _isLoading = true;
+  String? _error;
+
   @override
   void initState() {
     super.initState();
-    // Show welcome message after build completes
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showWelcomeMessage();
-    });
+    _loadRecommendations();
   }
 
-  void _showWelcomeMessage() {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.lightbulb, color: Colors.amber),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text('💡 Personalized tips based on your health data!'),
-              ),
-            ],
-          ),
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.blue.shade700,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+  Future<void> _loadRecommendations() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final recommendations = await _recommendationsService.getPersonalizedRecommendations();
+      setState(() {
+        _recommendations = recommendations;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
     }
+  }
+
+  Future<void> _refreshRecommendations() async {
+    await _loadRecommendations();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Health Recommendations'),
         centerTitle: true,
         elevation: 0,
         backgroundColor: theme.colorScheme.surface,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshRecommendations,
+            tooltip: 'Refresh recommendations',
+          ),
+        ],
       ),
-      body: ListView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? _buildErrorView(theme)
+              : _recommendations.isEmpty
+                  ? _buildNoRecommendationsView(theme)
+                  : _buildRecommendationsView(theme),
+    );
+  }
+
+  Widget _buildErrorView(ThemeData theme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red.shade300,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Unable to Load Recommendations',
+              style: theme.textTheme.headlineMedium?.copyWith(
+                color: Colors.red.shade700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error ?? 'An unknown error occurred',
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _refreshRecommendations,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try Again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoRecommendationsView(ThemeData theme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.lightbulb_outline,
+              size: 80,
+              color: theme.colorScheme.primary.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No Recommendations Yet',
+              style: theme.textTheme.headlineMedium?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Complete a breath analysis to receive personalized health recommendations based on your results.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _refreshRecommendations,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecommendationsView(ThemeData theme) {
+    return RefreshIndicator(
+      onRefresh: _refreshRecommendations,
+      child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           // Header
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withOpacity(0.3), // Fixed compatibility
+              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -69,143 +166,220 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                   size: 48,
                   color: theme.colorScheme.primary,
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   'Personalized Health Tips',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   'Based on your recent analysis results',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7), // Fixed compatibility
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          
-          // Recommendations Cards
-          _buildRecommendationCard(
-            context,
-            icon: Icons.directions_walk,
-            title: 'Daily Walking',
-            subtitle: 'Improves lung capacity and stamina',
-            description: 'Try a 10-15 minute brisk walk daily. Fresh air helps clear airways and strengthens respiratory muscles.',
-            color: Colors.green,
-          ),
-          const SizedBox(height: 12),
-          
-          _buildRecommendationCard(
-            context,
-            icon: Icons.waves, // Wave icon represents breathing rhythm
-            title: 'Breathing Exercises',
-            subtitle: 'Enhance respiratory function',
-            description: 'Practice box breathing: Inhale for 4, hold for 4, exhale for 4, hold for 4. Repeat 5-10 times.',
-            color: Colors.blue,
-          ),
-          const SizedBox(height: 12),
-          
-          _buildRecommendationCard(
-            context,
-            icon: Icons.local_cafe,
-            title: 'Herbal Remedies',
-            subtitle: 'Natural inflammation relief',
-            description: 'Green tea, ginger, and honey can soothe throat irritation and reduce inflammation.',
-            color: Colors.orange,
-          ),
-          const SizedBox(height: 12),
-          
-          _buildRecommendationCard(
-            context,
-            icon: Icons.bedtime,
-            title: 'Quality Sleep',
-            subtitle: 'Rest for recovery',
-            description: 'Aim for 7-9 hours of sleep. Proper rest helps your immune system and respiratory recovery.',
-            color: Colors.purple,
-          ),
-          const SizedBox(height: 12),
-          
-          _buildRecommendationCard(
-            context,
-            icon: Icons.water_drop,
-            title: ' Stay Hydrated',
-            subtitle: 'Keep airways moist',
-            description: 'Drink 8-10 glasses of water daily. Proper hydration helps thin mucus and clear airways.',
-            color: Colors.cyan,
-          ),
+
+          // Dynamic Recommendations Cards
+          ..._recommendations.map((recommendation) =>
+              _buildRecommendationCardFromRecommendation(context, recommendation)),
         ],
       ),
     );
   }
 
-  Widget _buildRecommendationCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String description,
-    required Color color,
-  }) {
+  Widget _buildRecommendationCardFromRecommendation(
+    BuildContext context,
+    Recommendation recommendation,
+  ) {
     final theme = Theme.of(context);
-    
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+
+    // Map icon string to IconData
+    IconData iconData;
+    switch (recommendation.icon) {
+      case 'directions_walk':
+        iconData = Icons.directions_walk;
+        break;
+      case 'waves':
+        iconData = Icons.waves;
+        break;
+      case 'local_cafe':
+        iconData = Icons.local_cafe;
+        break;
+      case 'bedtime':
+        iconData = Icons.bedtime;
+        break;
+      case 'water_drop':
+        iconData = Icons.water_drop;
+        break;
+      case 'check_circle':
+        iconData = Icons.check_circle;
+        break;
+      case 'air':
+        iconData = Icons.air;
+        break;
+      case 'face':
+        iconData = Icons.face;
+        break;
+      case 'local_hospital':
+        iconData = Icons.local_hospital;
+        break;
+      case 'healing':
+        iconData = Icons.healing;
+        break;
+      case 'touch_app':
+        iconData = Icons.touch_app;
+        break;
+      case 'assignment':
+        iconData = Icons.assignment;
+        break;
+      case 'block':
+        iconData = Icons.block;
+        break;
+      case 'medical_services':
+        iconData = Icons.medical_services;
+        break;
+      case 'chair':
+        iconData = Icons.chair;
+        break;
+      case 'schedule':
+        iconData = Icons.schedule;
+        break;
+      case 'local_drink':
+        iconData = Icons.local_drink;
+        break;
+      case 'water':
+        iconData = Icons.water;
+        break;
+      case 'warning':
+        iconData = Icons.warning;
+        break;
+      case 'mic':
+        iconData = Icons.mic;
+        break;
+      case 'celebration':
+        iconData = Icons.celebration;
+        break;
+      case 'fitness_center':
+        iconData = Icons.fitness_center;
+        break;
+      default:
+        iconData = Icons.lightbulb;
+    }
+
+    // Determine color based on category
+    Color color;
+    switch (recommendation.category) {
+      case 'exercise':
+        color = Colors.green;
+        break;
+      case 'breathing':
+        color = Colors.blue;
+        break;
+      case 'nutrition':
+        color = Colors.orange;
+        break;
+      case 'lifestyle':
+        color = Colors.purple;
+        break;
+      case 'maintenance':
+        color = Colors.teal;
+        break;
+      case 'prevention':
+        color = Colors.indigo;
+        break;
+      case 'management':
+        color = Colors.amber;
+        break;
+      case 'technique':
+        color = Colors.cyan;
+        break;
+      case 'medical':
+        color = Colors.red;
+        break;
+      case 'therapy':
+        color = Colors.pink;
+        break;
+      case 'monitoring':
+        color = Colors.brown;
+        break;
+      case 'relief':
+        color = Colors.lightBlue;
+        break;
+      case 'soothing':
+        color = Colors.lightGreen;
+        break;
+      case 'encouragement':
+        color = Colors.deepPurple;
+        break;
+      default:
+        color = Colors.grey;
+    }
+
+    return Column(
+      children: [
+        Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1), // Fixed compatibility issue
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: color,
-                    size: 24,
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        iconData,
+                        color: color,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            recommendation.title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            recommendation.subtitle,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        subtitle,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6), // Fixed compatibility
-                        ),
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: 12),
+                Text(
+                  recommendation.description,
+                  style: theme.textTheme.bodyMedium,
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              description,
-              style: theme.textTheme.bodyMedium,
-            ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 }

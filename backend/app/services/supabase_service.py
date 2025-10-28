@@ -95,7 +95,20 @@ class SupabaseService:
                     "model_version": "1.0.0",
                     "feature_set": "eGeMAPSv02",
                     "task_type": audio_metadata.get("task_type", "breath") if audio_metadata else "breath",
-                    "local_timestamp": current_time.strftime("%Y-%m-%d %H:%M:%S %Z")
+                    "local_timestamp": current_time.strftime("%Y-%m-%d %H:%M:%S %Z"),
+                    # Add detailed analysis information
+                    "possible_conditions": analysis_result.get("possible_conditions", []),
+                    "verdict": analysis_result.get("verdict", ""),
+                    "low_confidence": analysis_result.get("low_confidence", False),
+                    "simplified_label": analysis_result.get("simplified_label", ""),
+                    "acoustic_features": {
+                        "energy_variation": analysis_result.get("energy_variation", 0.0),
+                        "onset_rate": analysis_result.get("onset_rate", 0.0),
+                        "harsh_sound_ratio": analysis_result.get("harsh_sound_ratio", 0.0),
+                        "cough_event_ratio": analysis_result.get("cough_event_ratio", 0.0),
+                        "cough_frequency_ratio": analysis_result.get("cough_frequency_ratio", 0.0),
+                        "signal_strength": analysis_result.get("signal_strength", 0.0)
+                    }
                 }
             }
             
