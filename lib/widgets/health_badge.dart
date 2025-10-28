@@ -6,13 +6,19 @@ class HealthBadge extends StatelessWidget {
   const HealthBadge({super.key});
 
   Future<Map<String, dynamic>> _fetch() async {
-    final res = await Dio().get('${BackendConfig.baseUrl}/');
+    final res = await Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+      ),
+    ).get('${BackendConfig.baseUrl}/');
     return Map<String, dynamic>.from(res.data as Map);
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>>(
+      // Poll less frequently by caching via a Future that the caller can refresh on navigation
       future: _fetch(),
       builder: (context, snap) {
         if (!snap.hasData) return const SizedBox.shrink();

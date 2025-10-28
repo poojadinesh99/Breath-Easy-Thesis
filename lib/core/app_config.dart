@@ -11,14 +11,14 @@ class AppConfig {
       // For local development
       if (Platform.isAndroid) {
         // Android device needs actual machine IP
-        return 'http://192.168.178.42:8000';  // Your local machine IP
+        return 'http://192.168.178.158:8000';  // Your local machine IP
       }
       // iOS simulator and other platforms
       return 'http://localhost:8000';
     }
-    
+
     // Cloud backend (currently not available)
-    return 'https://your-app-name.onrender.com';  // Replace when you redeploy
+    return 'https://my-app-name.onrender.com';  // Replace when I redeploy
   }
   
   // Alternative: Use cloud ML APIs
