@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/history_service.dart';
 
 class ViewHistoryScreen extends StatefulWidget {
   const ViewHistoryScreen({super.key});
@@ -9,33 +9,17 @@ class ViewHistoryScreen extends StatefulWidget {
 }
 
 class _ViewHistoryScreenState extends State<ViewHistoryScreen> {
-  late final SupabaseClient _client;
-  Future<List<dynamic>>? _future;
+  Future<List<Map<String, dynamic>>>? _future;
 
   @override
   void initState() {
     super.initState();
-    _client = Supabase.instance.client;
     _loadHistory();
   }
 
   void _loadHistory() {
     setState(() {
-      _future = _client
-          .from('analysis_history')
-          .select('id, analysis_type, predicted_label, confidence, created_at, extra')
-          .order('created_at', ascending: false)
-          .limit(50)
-          .then((value) {
-            print('ViewHistoryScreen: Loaded ${value.length} records from Supabase');
-            for (var record in value.take(3)) {
-              print('ViewHistoryScreen: Record ${record['id']}: ${record['predicted_label']} (${record['confidence']})');
-            }
-            return value as List<dynamic>;
-          }).catchError((error) {
-            print('ViewHistoryScreen: Error loading data: $error');
-            throw error;
-          });
+      _future = HistoryService.getSupabaseHistory();
     });
   }
 
@@ -58,7 +42,7 @@ class _ViewHistoryScreenState extends State<ViewHistoryScreen> {
         child: const Icon(Icons.refresh),
         tooltip: 'Refresh History',
       ),
-      body: FutureBuilder<List<dynamic>>(
+      body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
@@ -72,7 +56,7 @@ class _ViewHistoryScreenState extends State<ViewHistoryScreen> {
                 children: [
                   const Icon(Icons.error, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text('Error loading history:\n${snapshot.error}', 
+                  Text('Error loading history:\n${snapshot.error}',
                        textAlign: TextAlign.center),
                   const SizedBox(height: 16),
                   ElevatedButton(
@@ -103,20 +87,24 @@ class _ViewHistoryScreenState extends State<ViewHistoryScreen> {
               itemCount: data.length,
               separatorBuilder: (_, __) => const Divider(height: 1),
               itemBuilder: (context, i) {
-              final row = data[i] as Map<String, dynamic>;
-              final label = row['predicted_label']?.toString() ?? '-';
-              final confidence = row['confidence'] ?? 0.0;
-              final type = row['analysis_type']?.toString() ?? 'unified';
-              final ts = row['created_at']?.toString() ?? '';
-              final extra = (row['extra'] as Map?) ?? {};
-              
-              // Extract the text summary from the backend
-              final textSummary = extra['text_summary']?.toString();
-              final transcript = extra['transcript']?.toString();
-              
+              final analysis = data[i];
+              final label = analysis['label']?.toString() ?? '-';
+              final confidence = analysis['confidence'] ?? 0.0;
+              final source = analysis['source']?.toString() ?? 'Breath Analysis';
+              final timestamp = analysis['timestamp'] as DateTime?;
+              final isReal = analysis['isReal'] ?? false;
+
+              // Extract detailed information from the analysis data
+              final verdict = analysis['verdict']?.toString();
+              final textSummary = analysis['text_summary']?.toString();
+              final possibleConditions = analysis['possible_conditions'] as List?;
+              final acousticFeatures = analysis['acoustic_features'] as Map?;
+              final transcript = analysis['transcription']?.toString();
+              final processingTime = analysis['processing_time'] as double?;
+
               // Format confidence as percentage
               final confidenceText = '${(confidence * 100).toStringAsFixed(1)}%';
-              
+
               // Create user-friendly title
               String title = label.toUpperCase();
               if (label == 'normal') {
@@ -127,14 +115,19 @@ class _ViewHistoryScreenState extends State<ViewHistoryScreen> {
                 title = '⚠️ Wheezing Detected';
               } else if (label == 'abnormal') {
                 title = '⚠️ Abnormal Pattern';
+              } else if (label == 'cough') {
+                title = '🗣️ Cough Detected';
+              } else if (label == 'heavy_breathing') {
+                title = '💨 Heavy Breathing';
+              } else if (label == 'throat_clearing') {
+                title = '🧽 Throat Clearing';
               }
-              
+
               // Format timestamp
-              final DateTime? dateTime = DateTime.tryParse(ts);
-              final formattedTime = dateTime != null 
-                ? '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}'
-                : ts;
-              
+              final formattedTime = timestamp != null
+                ? '${timestamp.day}/${timestamp.month}/${timestamp.year} ${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}'
+                : 'Unknown time';
+
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListTile(
@@ -146,15 +139,44 @@ class _ViewHistoryScreenState extends State<ViewHistoryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 4),
-                      Text('$type • $formattedTime'),
+                      Text('$source • $formattedTime'),
                       const SizedBox(height: 4),
-                      if (textSummary != null) 
+                      if (verdict != null && verdict.isNotEmpty)
+                        Text(
+                          verdict,
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      if (textSummary != null && textSummary.isNotEmpty)
                         Text(
                           textSummary,
                           style: const TextStyle(fontStyle: FontStyle.italic),
                         ),
-                      if (transcript != null) 
-                        Text('Transcript: $transcript'),
+                      if (possibleConditions != null && possibleConditions.isNotEmpty)
+                        Text(
+                          'Possible conditions: ${possibleConditions.join(", ")}',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      if (acousticFeatures != null && acousticFeatures.isNotEmpty)
+                        Text(
+                          'Energy: ${(acousticFeatures['energy_variation'] as double?)?.toStringAsFixed(2) ?? "N/A"}, '
+                          'Harsh: ${(acousticFeatures['harsh_sound_ratio'] as double?)?.toStringAsFixed(2) ?? "N/A"}',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      if (transcript != null && transcript.isNotEmpty)
+                        Text(
+                          'Transcript: $transcript',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      if (processingTime != null)
+                        Text(
+                          'Processed in ${(processingTime * 1000).toStringAsFixed(0)}ms',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      if (!isReal)
+                        Text(
+                          'Sample data',
+                          style: const TextStyle(fontSize: 10, color: Colors.blue, fontStyle: FontStyle.italic),
+                        ),
                     ],
                   ),
                   trailing: Container(

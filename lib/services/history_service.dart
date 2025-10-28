@@ -103,7 +103,7 @@ class HistoryService {
     try {
       final supabase = Supabase.instance.client;
       var user = supabase.auth.currentUser;
-      
+
       // For testing: create anonymous user if none exists (but handle disabled anonymous auth)
       if (user == null) {
         try {
@@ -112,11 +112,39 @@ class HistoryService {
           print('Created anonymous user for history retrieval: ${user?.id}');
         } catch (e) {
           print('Failed to create anonymous user for history retrieval: $e');
-          print('Anonymous authentication is disabled - returning local history only');
-          return _localHistory; // Return local history instead of empty list
+          print('Anonymous authentication is disabled - returning all history (no user filter)');
+          // Return all history without user filter when auth is disabled
+          final data = await supabase
+              .from('analysis_history')
+              .select()
+              .order('created_at', ascending: false)
+              .limit(50);
+
+          print('Loaded ${data.length} real analysis entries from Supabase (no user filter)');
+
+          // Convert to expected format with detailed information from extra field
+          final realData = data.map<Map<String, dynamic>>((item) => {
+            'label': item['predicted_label'] ?? 'Unknown',
+            'confidence': (item['confidence'] ?? 0.0).toDouble(),
+            'source': item['analysis_type'] == 'speech' ? 'Speech Analysis' : 'Breath Analysis',
+            'timestamp': DateTime.parse(item['created_at']),
+            'predictions': item['extra']?['predictions'] ?? {},
+            'isReal': true,
+            // Add detailed information from extra field
+            'possible_conditions': item['extra']?['possible_conditions'] ?? [],
+            'verdict': item['extra']?['verdict'] ?? '',
+            'simplified_label': item['extra']?['simplified_label'] ?? '',
+            'acoustic_features': item['extra']?['acoustic_features'] ?? {},
+            'text_summary': item['extra']?['text_summary'] ?? '',
+            'transcription': item['extra']?['transcription'] ?? '',
+            'processing_time': item['extra']?['processing_time'] ?? 0.0,
+            'model_version': item['extra']?['model_version'] ?? '1.0.0',
+          }).toList();
+
+          return realData;
         }
       }
-      
+
       if (user != null) {
         final data = await supabase
             .from('analysis_history')
@@ -124,19 +152,28 @@ class HistoryService {
             .eq('user_id', user.id)
             .order('created_at', ascending: false)
             .limit(50);
-        
+
         print('Loaded ${data.length} real analysis entries from Supabase');
-        
-        // Convert to expected format
+
+        // Convert to expected format with detailed information from extra field
         final realData = data.map<Map<String, dynamic>>((item) => {
-          'label': item['predicted_label'] ?? 'Unknown',  // Map from actual schema
+          'label': item['predicted_label'] ?? 'Unknown',
           'confidence': (item['confidence'] ?? 0.0).toDouble(),
-          'source': item['analysis_type'] == 'speech' ? 'Speech Analysis' : 'Breath Analysis',  // Map from actual schema
+          'source': item['analysis_type'] == 'speech' ? 'Speech Analysis' : 'Breath Analysis',
           'timestamp': DateTime.parse(item['created_at']),
-          'predictions': item['extra'] ?? {},  // Map from actual schema
-          'isReal': true, // Mark as real data
+          'predictions': item['extra']?['predictions'] ?? {},
+          'isReal': true,
+          // Add detailed information from extra field
+          'possible_conditions': item['extra']?['possible_conditions'] ?? [],
+          'verdict': item['extra']?['verdict'] ?? '',
+          'simplified_label': item['extra']?['simplified_label'] ?? '',
+          'acoustic_features': item['extra']?['acoustic_features'] ?? {},
+          'text_summary': item['extra']?['text_summary'] ?? '',
+          'transcription': item['extra']?['transcription'] ?? '',
+          'processing_time': item['extra']?['processing_time'] ?? 0.0,
+          'model_version': item['extra']?['model_version'] ?? '1.0.0',
         }).toList();
-        
+
         // Return real data if available
         if (realData.isNotEmpty) {
           return realData;
@@ -145,7 +182,7 @@ class HistoryService {
     } catch (e) {
       print('Failed to load history from Supabase: $e');
     }
-    
+
     // Return empty list instead of sample data to show "No analyses found"
     print('No real analysis data found - returning empty list');
     return [];
