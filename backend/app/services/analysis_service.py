@@ -1,15 +1,15 @@
 """
 Service for analyzing audio files and generating predictions.
-Handles both breath and speech analysis with proper audio normalization.
+Now includes smart input-type detection and dynamic verdict mapping.
 """
 import os
 import logging
-from typing import Dict, Any
 import time
+from typing import Dict, Any
 from fastapi import HTTPException
-
+import librosa
 from .audio_utils import normalize_audio, AudioNormalizationError
-from .feature_extraction import extract_features
+from .feature_extraction import extract_features, detect_input_type,detect_task_type
 from .model_service import ModelService
 from .supabase_service import SupabaseService
 
@@ -53,14 +53,32 @@ class AnalysisService:
         try:
             start_time = time.time()
             normalized_path, duration = normalize_audio(file_path, min_duration=min_duration)
+            start_time = time.time()
+            normalized_path, duration = normalize_audio(file_path, min_duration=min_duration)
+
+            # --- 🎛️ Auto-detect speech vs breath before extracting features ---
+            try:
+                y, sr = librosa.load(file_path, sr=16000)
+                auto_task = detect_task_type(y, sr)
+                if task_type != auto_task:
+                    logger.info(f"🎛️ Auto-switched task type: {task_type} → {auto_task}")
+                    task_type = auto_task
+            except Exception as e:
+                logger.warning(f"Auto task detection failed: {e}")
+
+            # --- Now continue with feature extraction ---
             features = extract_features(normalized_path, task_type)
             os.remove(normalized_path)
 
+
+            # --- 🔍 Model prediction ---
             predictions = self.model_service.predict(features)
             class_probs = predictions.get("class_probs", {})
+            label = max(class_probs, key=class_probs.get)
+            confidence = class_probs[label]
             logger.info(f"Raw model output: {class_probs}")
 
-            # --- ⚖️ Rebalance prediction bias ---
+            # --- ⚖️ Rebalance class bias ---
             rebalance_factors = {
                 "cough": 2.5,
                 "throat_clearing": 2.2,
@@ -84,51 +102,40 @@ class AnalysisService:
             harsh_ratio = float(features.get("harsh_sound_ratio", 0.0))
             logger.info(f"Energy={energy_var:.2f}, Onset={onset_rate:.2f}, Harsh={harsh_ratio:.2f}")
 
-            # --- 🩺 Fix false heavy_breathing for calm breathing ---
-            if label == "heavy_breathing" and energy_var < 2.0 and onset_rate < 3.5:
-                logger.info("🫁 Adjusted calm heavy_breathing → normal (stable low energy pattern)")
-                label = "normal"
-                confidence = 0.9
+            # --- 🧠 Step 1: Auto-detect acoustic input type ---
+            detected_type = detect_input_type(features)
+            logger.info(f"🧩 Auto-detected input type: {detected_type}")
 
-            # --- 💥 Unified Cough vs Throat Clearing rule ---
-            if 2.3 <= energy_var <= 3.5 and onset_rate < 3.5:
-                if harsh_ratio >= 0.10:
-                    logger.info("💥 Adjusted to cough (moderate–high energy short burst)")
-                    label = "cough"
-                    confidence = 0.88
-                elif 0.05 <= harsh_ratio < 0.10:
-                    logger.info("🔄 Adjusted to throat_clearing (mild energy, low harshness)")
-                    label = "throat_clearing"
-                    confidence = 0.84
+            # --- Step 2: Re-align predictions if mismatch detected ---
+            if confidence < 0.65 or (label != detected_type and detected_type != "normal"):
+                logger.info(f"⚖️ Re-aligning model prediction ({label}) → detected ({detected_type})")
+                label = detected_type
+                confidence = max(confidence, 0.82)
 
-            # --- 🎙️ Speech-specific correction ---
-            if task_type == "speech":
-                if energy_var > 1.5 and harsh_ratio > 0.1 and onset_rate < 3.5:
-                    logger.info("🎙️ Adjusted speech burst → cough (speech context)")
-                    label = "cough"
-                    confidence = 0.85
-                elif 1.0 < energy_var < 2.2 and 3.0 <= onset_rate <= 4.0 and harsh_ratio < 0.15:
-                    logger.info("🎙️ Adjusted speech segment → throat_clearing")
-                    label = "throat_clearing"
-                    confidence = 0.83
-
-            # --- 🧠 Map symptom to likely conditions ---
+            # --- 🎯 Step 3: Map to likely conditions ---
             disease_map = {
                 "cough": ["URTI", "Bronchitis", "Post-COVID irritation"],
                 "heavy_breathing": ["COPD", "Asthma", "Pneumonia"],
                 "throat_clearing": ["Post-COVID", "Allergy", "Reflux"],
-                "abnormal": ["Bronchiectasis", "COPD", "Pneumonia"],
                 "normal": ["Healthy"]
             }
             possible_conditions = disease_map.get(label.lower(), ["Unspecified"])
-            disease_hint = ", ".join(possible_conditions)
 
-            # --- 🧾 Generate summary ---
-            summary = self._generate_summary(
-                {"predicted_class": label, "confidence": confidence, "transcription": features.get("transcription", "")},
-                task_type,
-                duration,
-                disease_hint
+            # --- 🩺 Step 4: Human-friendly verdict ---
+            verdict_map = {
+                "cough": "🤧 Detected cough pattern — possible bronchitis, infection, or post-COVID irritation.",
+                "heavy_breathing": "⚠️ Detected heavy breathing — may indicate asthma, COPD, or exertion.",
+                "throat_clearing": "🗣️ Detected throat clearing — may relate to allergy, reflux, or mild irritation.",
+                "normal": "✅ Normal breathing pattern detected — no abnormality found.",
+            }
+            verdict_text = verdict_map.get(label, "🔍 Uncertain pattern — please retest or check mic clarity.")
+
+            # --- 🧾 Step 5: Summary for UI ---
+            summary = (
+                f"{verdict_text}\n\n"
+                f"💡 Confidence: {confidence*100:.1f}%\n"
+                f"🩺 Possible associated conditions: {', '.join(possible_conditions)}.\n"
+                f"⚙️ Note: Prototype AI — not a medical device."
             )
 
             result = {
@@ -137,13 +144,14 @@ class AnalysisService:
                 "simplified_label": label,
                 "confidence": confidence,
                 "possible_conditions": possible_conditions,
+                "verdict": verdict_text,
                 "source": "local",
                 "processing_time": time.time() - start_time,
                 "text_summary": summary,
-                "original_label": label,
                 "low_confidence": confidence < 0.75
             }
 
+            # --- 💾 Optional: Supabase Logging ---
             try:
                 await self.supabase_service.save_analysis_result(
                     result,
@@ -166,32 +174,3 @@ class AnalysisService:
                 "processing_time": 0.0,
                 "text_summary": f"❌ Analysis failed: {e}"
             }
-
-    def _generate_summary(
-        self,
-        predictions: Dict[str, Any],
-        task_type: str,
-        duration: float,
-        disease_hint: str = ""
-    ) -> str:
-        """Generate a user-friendly summary."""
-        label = predictions.get("predicted_class", "Unknown")
-        confidence = predictions.get("confidence", 0.0)
-
-        emojis = {
-            "normal": "✅",
-            "cough": "🤧",
-            "throat_clearing": "🗣️",
-            "heavy_breathing": "⚠️",
-        }
-        emoji = emojis.get(label, "🔍")
-        msg = label.replace("_", " ").title()
-
-        summary = (
-            f"{emoji} Detected **{msg}** pattern "
-            f"with {confidence*100:.1f}% confidence.\n"
-            f"💡 Possible associated conditions: {disease_hint}.\n"
-            f"⚙️ Note: This mapping is heuristic — confirm with clinical diagnosis.\n\n"
-            f"🩺 Prototype AI system — not a medical device."
-        )
-        return summary
