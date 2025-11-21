@@ -1,7 +1,19 @@
 __pycache__/
 *.py[cod]
-*.env
+
+# Environment files - never commit these
 .env
+.env.local
+.env.*
+*.env
+!.env.example
+
+# Python virtual environments
+venv/
+.venv/
+env/
+ENV/
+
 *.iml
 .idea/
 android/
