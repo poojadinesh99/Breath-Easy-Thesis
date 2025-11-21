@@ -95,6 +95,104 @@ Flutter App --> FastAPI Backend --> RF Model + OpenSMILE
 
 ---
 
+## 🔐 Security & Environment Configuration
+
+### ⚠️ Important Security Notice
+
+**A Hugging Face token was previously committed to this repository and has been revoked.** If you forked or cloned this repository before the token was removed, you must:
+
+1. **Rotate any tokens immediately** at [https://hf.co/settings/tokens](https://hf.co/settings/tokens)
+2. **Never commit `.env` files** - they are now properly gitignored
+3. **Use environment variables or secrets** for all credentials
+
+### 🔑 Setting Up Environment Variables
+
+#### Local Development
+
+1. Copy the example environment files:
+   ```bash
+   cp .env.example .env
+   cp backend/.env.example backend/.env
+   cp supabase/.env.example supabase/.env
+   ```
+
+2. Fill in your actual credentials in the `.env` files (never commit these!)
+
+3. For Hugging Face token, set `HF_TOKEN` in your `.env` file:
+   ```bash
+   HF_TOKEN=hf_your_actual_token_here
+   ```
+
+   Or export it in your shell:
+   ```bash
+   export HF_TOKEN=hf_your_actual_token_here
+   ```
+
+#### GitHub Actions / CI
+
+Add secrets to your repository:
+1. Go to **Settings → Secrets and variables → Actions**
+2. Click **New repository secret**
+3. Add `HF_TOKEN` with your Hugging Face token value
+4. Add other secrets as needed (SUPABASE_URL, SUPABASE_KEY, etc.)
+
+#### Hugging Face Space
+
+Add secrets to your Space:
+1. Go to your Space **Settings → Variables and secrets**
+2. Add `HF_TOKEN` and any other required secrets
+3. These will be available as environment variables at runtime
+
+### 🧹 Removing Secrets from Git History (For Repository Admins)
+
+**Note:** The following steps require force-pushing and will rewrite history. Coordinate with all contributors first.
+
+#### Option 1: Using git-filter-repo (Recommended)
+
+```bash
+# Install git-filter-repo
+pip install git-filter-repo
+
+# Remove all .env files from history
+git filter-repo --path backend/.env --invert-paths
+git filter-repo --path supabase/.env --invert-paths
+git filter-repo --path huggingface_space/.env --invert-paths
+git filter-repo --path .env --invert-paths
+
+# Force push (⚠️ requires coordination with team)
+git push --force --all
+```
+
+#### Option 2: Using BFG Repo-Cleaner
+
+```bash
+# Download BFG from https://rtyley.github.io/bfg-repo-cleaner/
+java -jar bfg.jar --delete-files .env
+
+# Clean up and force push
+git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+git push --force --all
+```
+
+#### Option 3: Safe Alternative (No History Rewrite)
+
+If you prefer not to rewrite history:
+1. ✅ Rotate all exposed credentials immediately at [https://hf.co/settings/tokens](https://hf.co/settings/tokens)
+2. ✅ The secrets are now removed from the working tree and future commits
+3. ✅ Update team members to use the new tokens
+4. ⚠️ Note: Old commits will still contain the secrets, but they'll be invalid
+
+### 📋 Checklist for Contributors
+
+- [ ] Never commit `.env` files
+- [ ] Always use `.env.example` as a template
+- [ ] Store real credentials in environment variables or secrets
+- [ ] Rotate tokens if accidentally committed
+- [ ] Review changes before pushing to ensure no secrets are included
+
+---
+
 ## 🎓 Author
 Pooja Dinesh  
 👩‍🎓 Master's in Data Science – FAU Erlangen-Nürnberg  
