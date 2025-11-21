@@ -153,11 +153,8 @@ Add secrets to your Space:
 # Install git-filter-repo
 pip install git-filter-repo
 
-# Remove all .env files from history
-git filter-repo --path backend/.env --invert-paths
-git filter-repo --path supabase/.env --invert-paths
-git filter-repo --path huggingface_space/.env --invert-paths
-git filter-repo --path .env --invert-paths
+# Remove all .env files from history in one command
+git filter-repo --path backend/.env --path supabase/.env --path huggingface_space/.env --path .env --invert-paths
 
 # Force push (⚠️ requires coordination with team)
 git push --force --all
